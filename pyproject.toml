@@ -1,0 +1,35 @@
+[project]
+name = "project-storage"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "glebzlat",email = "gleb.zlatanov@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi[standard] (>=0.141.1,<0.142.0)",
+    "pydantic-settings (>=2.14.2,<3.0.0)",
+    "httpx2 (>=2.9.1,<3.0.0)"
+]
+
+[tool.poetry]
+packages = [{include = "project_storage", from = "src"}]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.1.1,<10.0.0)",
+    "pytest-cov (>=7.1.0,<8.0.0)",
+    "flake8 (>=7.3.0,<8.0.0)",
+    "mypy (>=2.3.0,<3.0.0)",
+    "poethepoet (>=0.48.0,<0.49.0)"
+]
+
+[tool.poe.tasks]
+test = "pytest --cov=src/project_storage"
+pep8 = "flake8 src/project_storage"
+mypy = "mypy src/project_storage"
