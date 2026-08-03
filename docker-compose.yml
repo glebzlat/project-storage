@@ -7,6 +7,13 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    develop:
+      watch:
+        - path: ./src
+          action: sync
+          target: /home/runner/app/src
+        - path: ./pyproject.toml
+          action: rebuild
     volumes:
       - ./alembic:/home/runner/app/alembic:z
   db:
