@@ -27,13 +27,20 @@ poe pep8  # PEP8 style checking
 Start the development server:
 
 ```sh
-uv run uvicorn src.project_storage.main:app --reload
+fastapi dev src/project_storage/main.py
 ```
 
 Test the API:
 
 ```sh
 curl -X GET http://localhost:8000/api/healthcheck
+```
+
+Build and run the Docker container:
+
+```sh
+docker compose build
+docker compose up
 ```
 
 ## Used resources
