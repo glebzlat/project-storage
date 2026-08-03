@@ -7,6 +7,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    volumes:
+      - ./alembic:/home/runner/app/alembic:z
   db:
     image: postgres:18.4-alpine3.24
     restart: unless-stopped

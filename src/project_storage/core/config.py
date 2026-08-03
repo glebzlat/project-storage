@@ -11,5 +11,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "ProjectStorage"
     API_PATH: str = "/api"
 
+    DB_URL: str
+
 
 settings = Settings()
