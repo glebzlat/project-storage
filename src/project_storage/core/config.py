@@ -13,5 +13,9 @@ class Settings(BaseSettings):
 
     DB_URL: str
 
+    JWT_EXPIRATION_TIME_MINUTES: int = 60
+    JWT_ALGORITHM: str = "HS256"
+    JWT_SECRET_KEY: str = "not-a-production-secret-at-least-32-bytes-long"
+
 
 settings = Settings()
