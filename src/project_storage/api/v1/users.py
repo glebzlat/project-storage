@@ -1,39 +1,22 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm
 
 from project_storage.use_cases.register_user import (
     RegisterUser,
     UsernameAlreadyTakenError
 )
-from project_storage.use_cases.current_user import CurrentUser
 from project_storage.dependencies import (
     get_register_user_uc,
     get_authenticate_user_uc,
-    get_current_user_uc
+    get_current_user
 )
 from project_storage.schemas import Token
-from project_storage.core.config import settings
+from project_storage.models import User
 
 
 router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl=f"{settings.API_PATH}/users/token"
-)
-
-
-def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
-    use_case=Depends(get_current_user_uc)
-) -> CurrentUser:
-    if (user := use_case.get(token)) is not None:
-        return user
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"}
-    )
 
 
 @router.post("/register")
@@ -68,5 +51,9 @@ def login_user(
 
 
 @router.get("/me")
-def read_me(current_user: Annotated[CurrentUser, Depends(get_current_user)]):
-    return current_user
+def read_me(current_user: Annotated[User, Depends(get_current_user)]):
+    return {
+        "id": current_user.uid,
+        "username": current_user.username,
+        "name": current_user.name
+    }

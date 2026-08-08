@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
+from typing import Optional
 
-from sqlalchemy import String
-from sqlalchemy.types import UUID
+from sqlalchemy import String, ForeignKey
+from sqlalchemy.types import UUID, Text
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
-    mapped_column
+    mapped_column,
+    relationship
 )
 
 
@@ -23,3 +26,17 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(64))
     username: Mapped[str] = mapped_column(String(32), unique=True)
     hashed_password: Mapped[str] = mapped_column(String(512))
+
+    projects: Mapped[list[Project]] = relationship()
+
+
+class Project(Base):
+    __tablename__ = "project"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    pid: Mapped[uuid.UUID] = mapped_column(UUID())
+    name: Mapped[str] = mapped_column(String(64))
+    description: Mapped[Optional[str]] = mapped_column(Text())
+    created_at: Mapped[datetime]
+
+    owner_id: Mapped[int] = mapped_column(ForeignKey(User.id))

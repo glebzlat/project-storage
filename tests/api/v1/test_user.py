@@ -1,12 +1,9 @@
 import uuid
-import pytest
 import jwt
 
 from unittest import mock
 from http import HTTPStatus
 from datetime import timedelta, datetime, timezone
-
-from fastapi.testclient import TestClient
 
 from project_storage.main import app
 from project_storage.core.config import settings
@@ -22,14 +19,6 @@ from project_storage.use_cases.register_user import (
 from project_storage.use_cases.authenticate_user import AuthenticateUserUseCase
 from project_storage.use_cases.current_user import CurrentUserUseCase
 from project_storage.models import User
-
-
-@pytest.fixture
-def test_client():
-    app.dependency_overrides.clear()
-    with TestClient(app) as client:
-        yield client
-    app.dependency_overrides.clear()
 
 
 def test_register_user(test_client):
