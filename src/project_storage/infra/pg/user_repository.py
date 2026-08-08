@@ -16,7 +16,7 @@ from project_storage.database import connect
 class PgUserRepository(UserRepository):
 
     def get_by_id(self, id: uuid.UUID) -> Optional[User]:
-        stmt = select(User).where(User.uuid == id)
+        stmt = select(User).where(User.uid == id)
 
         with connect() as session:
             return session.scalar(stmt)
