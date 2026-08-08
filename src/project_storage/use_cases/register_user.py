@@ -3,7 +3,6 @@ import uuid
 from pydantic import BaseModel
 from pwdlib import PasswordHash
 
-from project_storage.use_case import UseCase
 from project_storage.repositories.user_repository import UserRepository
 from project_storage.models import User
 from project_storage.repositories.user_repository import UserExistsError
@@ -24,7 +23,7 @@ class UsernameAlreadyTakenError(Exception):
     """The user with the given username already exists."""
 
 
-class RegisterUserUseCase(UseCase):
+class RegisterUserUseCase:
 
     def __init__(self, user_repository: UserRepository) -> None:
         self._user_repository = user_repository

@@ -3,7 +3,6 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from project_storage.use_case import UseCase
 from project_storage.use_cases.register_user import (
     RegisterUser,
     UsernameAlreadyTakenError
@@ -21,7 +20,7 @@ router = APIRouter()
 @router.post("/register")
 def register_user(
     user: RegisterUser,
-    use_case: UseCase = Depends(get_register_user_uc)
+    use_case=Depends(get_register_user_uc)
 ):
     try:
         result = use_case.execute(user)
