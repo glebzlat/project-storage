@@ -49,7 +49,7 @@ poe pep8
 
 ### 3. Run an app
 
-This step depends on [environment configuration step](1-configure-environment)
+This step depends on [environment configuration step](#1-configure-environment)
 described in the Run section.
 
 Build and run the development service:
