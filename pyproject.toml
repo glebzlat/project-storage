@@ -39,3 +39,6 @@ dev = [
 test = "pytest --cov=src/project_storage"
 pep8 = "flake8 src/project_storage"
 mypy = "mypy src/project_storage"
+
+[tool.mypy]
+plugins = ["pydantic.mypy"]

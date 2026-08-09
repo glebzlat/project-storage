@@ -45,4 +45,4 @@ COPY --from=builder /home/runner/app/$VIRTUAL_ENV $VIRTUAL_ENV
 
 COPY --parents --chown=app:app alembic.ini src ./
 
-ENTRYPOINT ["fastapi", "run", "src/project_storage/main.py"]
+ENTRYPOINT ["fastapi"]

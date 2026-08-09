@@ -1,55 +1,78 @@
 # Project Storage
 
+Project Storage is a service that manages projects and project resources. It
+allows users to create projects, add project files, invite participants, and
+transfer projects.
+
+## Run
+
+### 1. Configure environment
+
+Use [`env.example`](./env.example) file to create a `.env`. Replace all
+`<placeholders>` with your values.
+
+### 2. Run the app
+
+Build and run an application container.
+
+```sh
+docker compose --profile prod up --build
+```
+
+The service will be available on `http://localhost:8000`. View the API
+documentation at `http://localhost:8000/docs`.
+
 ## Development
 
-The project is managed using [Poetry](https://python-poetry.org/).
-
-Install the dependencies
+### 1. Install the dependencies
 
 ```sh
 poetry install --with=dev
 ```
 
-Activate the environment
+### 2. Development commands
+
+Activate the environment:
 
 ```sh
 eval $(poetry env activate)
 ```
 
-Run the `poe` commands:
+Use the following command to run unit tests, MyPy type checker and Flake
+style checker respectively:
 
 ```sh
-poe test  # Unit testing
-poe mypy  # Type checking
-poe pep8  # PEP8 style checking
+poe test
+poe mypy
+poe pep8
 ```
 
-Create a `.env` file before launching the application, see `env.example`.
+### 3. Run an app
 
-Start the development server:
+This step depends on [environment configuration step](1-configure-environment)
+described in the Run section.
+
+Build and run the development service:
 
 ```sh
-fastapi dev src/project_storage/main.py
+docker compose --profile dev up --build
 ```
 
-Test the API:
+Add `--watch` option in order to sync source file changes. FastAPI is launched
+in the dev mode and will reload the changes.
+
+### 4. Database migrations
+
+Running application and database containers are required in order to perform
+revisions and migrations. Run the `up` command in detached state or in watch
+mode in a different terminal (I suggest using `tmux` for convenience).
 
 ```sh
-curl -X GET http://localhost:8000/api/healthcheck
+docker compose exec app|app-dev alembic ...
 ```
 
-Build and run the Docker container:
-
-```sh
-docker compose build
-docker compose up
-```
-
-Perform database migration:
-
-```sh
-docker compose exec app alembic upgrade head
-```
+Replace `app|app-dev` with one alternative matching the profile used to start
+the containers.
 
 ## Used resources
 
