@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import String, ForeignKey
+from sqlalchemy import String, ForeignKey, UniqueConstraint
 from sqlalchemy.types import UUID, Text
 from sqlalchemy.orm import (
     DeclarativeBase,
@@ -12,6 +12,10 @@ from sqlalchemy.orm import (
     mapped_column,
     relationship
 )
+
+
+def now():
+    return datetime.now(timezone.utc)
 
 
 class Base(DeclarativeBase):
@@ -37,6 +41,10 @@ class Project(Base):
     pid: Mapped[uuid.UUID] = mapped_column(UUID())
     name: Mapped[str] = mapped_column(String(64))
     description: Mapped[Optional[str]] = mapped_column(Text())
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(default=now)
 
     owner_id: Mapped[int] = mapped_column(ForeignKey(User.id))
+
+    __table_args__ = (
+        UniqueConstraint("name", "owner_id", name="unique_name_owner_id"),
+    )

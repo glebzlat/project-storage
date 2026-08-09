@@ -8,6 +8,7 @@ from project_storage.use_cases.authenticate_user import AuthenticateUserUseCase
 from project_storage.use_cases.current_user import CurrentUserUseCase
 from project_storage.use_cases.create_project import CreateProjectUseCase
 from project_storage.infra.pg.user_repository import PgUserRepository
+from project_storage.infra.pg.project_repository import PgProjectRepository
 from project_storage.core.config import settings
 from project_storage.models import User
 
@@ -29,11 +30,15 @@ def get_current_user_uc():
 
 
 def get_create_project_uc():
-    return CreateProjectUseCase()
+    return CreateProjectUseCase(get_project_repository())
 
 
 def get_user_repository():
     return PgUserRepository()
+
+
+def get_project_repository():
+    return PgProjectRepository()
 
 
 def get_current_user(
