@@ -10,7 +10,8 @@ from project_storage.models import User
 from project_storage.use_cases.register_user import (
     RegisterUser,
     UsernameAlreadyTakenError,
-    RegisterUserUseCase
+    RegisterUserUseCase,
+    PasswordsDoNotMatchError
 )
 
 
@@ -37,7 +38,8 @@ def test_register_user_adds_to_repo_and_returns_response():
     register_request = RegisterUser(
         username="user",
         name="John Doe",
-        password="password123"
+        password="password123",
+        repeat_password="password123"
     )
     password_hash = PasswordHash.recommended()
 
@@ -63,10 +65,25 @@ def test_register_user_duplicate_user_raises_already_taken_error():
     register_request = RegisterUser(
         username="johndoe",
         name="John Doe",
-        password="password123"
+        password="password123",
+        repeat_password="password123"
     )
 
     use_case.execute(register_request)
 
     with pytest.raises(UsernameAlreadyTakenError, match="^johndoe$"):
+        use_case.execute(register_request)
+
+
+def test_register_user_password_mismatch_raises_error():
+    repo = UserRepositoryFake()
+    use_case = RegisterUserUseCase(repo)
+    register_request = RegisterUser(
+        username="johndoe",
+        name="John Doe",
+        password="password123",
+        repeat_password="password234"
+    )
+
+    with pytest.raises(PasswordsDoNotMatchError):
         use_case.execute(register_request)
