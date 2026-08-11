@@ -43,6 +43,6 @@ ENV VIRTUAL_ENV=.venv \
 
 COPY --from=builder /home/runner/app/$VIRTUAL_ENV $VIRTUAL_ENV
 
-COPY --parents --chown=app:app alembic.ini src ./
+COPY --parents --chown=runner:runner alembic.ini src ./
 
 ENTRYPOINT ["fastapi"]
