@@ -16,7 +16,8 @@ dependencies = [
     "psycopg2-binary (>=2.9.12,<3.0.0)",
     "pwdlib[argon2] (>=0.3.0,<0.4.0)",
     "pyjwt (>=2.13.0,<3.0.0)",
-    "pytest-mock (>=3.15.1,<4.0.0)"
+    "pytest-mock (>=3.15.1,<4.0.0)",
+    "sqlalchemy-utils (>=0.42.1,<0.43.0)"
 ]
 
 [tool.poetry]
@@ -42,3 +43,6 @@ mypy = "mypy src/project_storage"
 
 [tool.mypy]
 plugins = ["pydantic.mypy"]
+
+[tool.pytest]
+pythonpath = ["src"]
