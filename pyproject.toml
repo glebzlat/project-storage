@@ -40,6 +40,7 @@ dev = [
 test = "pytest -m 'unit and integration'"
 unit_test = "pytest --cov=src/project_storage -m unit"
 integ_test = "pytest -m integration"
+docker_test = "docker compose --profile test up --abort-on-container-exit --exit-code-from app-test"
 pep8 = "flake8 src/project_storage"
 mypy = "mypy src/project_storage"
 
