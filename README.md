@@ -42,9 +42,33 @@ Use the following command to run unit tests, MyPy type checker and Flake
 style checker respectively:
 
 ```sh
-poe test
+poe unit_test
 poe mypy
 poe pep8
+```
+
+#### Unit tests
+
+There is no additional requirements for running unit tests: they mock all
+heavy-weight and external dependencies. Therefore it is always possible to
+execute them locally just by typing
+
+```sh
+poe unit_test
+```
+
+#### Integration tests
+
+Integration tests require a full infrastructure set up and running, so either
+install and arm all the required services (look at `docker-compose.yml`)
+or just use `docker compose`.
+
+The command below builds and runs test service. Note that it rebuilds services
+each time it is invoked. Also note that this command only runs integration
+tests.
+
+```sh
+poe docker_test
 ```
 
 ### 3. Run an app
