@@ -5,7 +5,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from project_storage.use_cases.register_user import (
     RegisterUser,
-    UsernameAlreadyTakenError
+    UsernameAlreadyTakenError,
+    PasswordsDoNotMatchError
 )
 from project_storage.dependencies import (
     get_register_user_uc,
@@ -31,6 +32,11 @@ def register_user(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Username already taken"
+        )
+    except PasswordsDoNotMatchError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Provided passwords don't match"
         )
 
 

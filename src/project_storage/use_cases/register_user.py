@@ -12,6 +12,7 @@ class RegisterUser(BaseModel):
     username: str
     name: str
     password: str
+    repeat_password: str
 
 
 class RegisteredUser(BaseModel):
@@ -23,12 +24,19 @@ class UsernameAlreadyTakenError(Exception):
     """The user with the given username already exists."""
 
 
+class PasswordsDoNotMatchError(Exception):
+    """Password does not match repeated password."""
+
+
 class RegisterUserUseCase:
 
     def __init__(self, user_repository: UserRepository) -> None:
         self._user_repository = user_repository
 
     def execute(self, request: RegisterUser) -> RegisteredUser:
+        if request.password != request.repeat_password:
+            raise PasswordsDoNotMatchError("Passwords do not match")
+
         password_hash = PasswordHash.recommended()
         hashed_password = password_hash.hash(request.password)
 

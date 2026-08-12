@@ -22,7 +22,6 @@ from project_storage.models import User
 
 
 def test_register_user(test_client):
-
     uid = uuid.uuid4()
     use_case_mock = mock.Mock()
     use_case_mock.execute.return_value = RegisteredUser(id=uid, username="user")
@@ -30,7 +29,12 @@ def test_register_user(test_client):
 
     response = test_client.post(
         f"{settings.API_PATH}/users/register",
-        json={"username": "user", "name": "John Doe", "password": "password123"}
+        json={
+            "username": "user",
+            "name": "John Doe",
+            "password": "password123",
+            "repeat_password": "password123"
+        }
     )
 
     assert response.status_code == HTTPStatus.OK
@@ -48,7 +52,12 @@ def test_register_user_duplicate_returns_409(test_client):
 
     response = test_client.post(
         f"{settings.API_PATH}/users/register",
-        json={"username": "user", "name": "John Doe", "password": "password123"}
+        json={
+            "username": "user",
+            "name": "John Doe",
+            "password": "password123",
+            "repeat_password": "password123"
+        }
     )
 
     assert response.status_code == HTTPStatus.CONFLICT
