@@ -84,7 +84,7 @@ services:
         INSTALL_TEST_DEV: 1
     restart: "no"
     entrypoint: []
-    command: ["pytest", "-v", "tests/api/v1"]
+    command: ["poe", "integ_test"]
     environment:
       DB_URL: postgresql://app:password@db-test:5432/project_storage_test
     depends_on:

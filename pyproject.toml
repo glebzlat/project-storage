@@ -37,7 +37,9 @@ dev = [
 ]
 
 [tool.poe.tasks]
-test = "pytest --cov=src/project_storage"
+test = "pytest -m 'unit and integration'"
+unit_test = "pytest --cov=src/project_storage -m unit"
+integ_test = "pytest -m integration"
 pep8 = "flake8 src/project_storage"
 mypy = "mypy src/project_storage"
 
