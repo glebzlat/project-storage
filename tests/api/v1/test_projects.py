@@ -314,3 +314,60 @@ def test_update_project_nonexisting_project_returns_404(
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": "Project not found"}
+
+
+def test_delete_project(
+    test_client,
+    create_user,
+    create_project,
+    make_token
+):
+    user = create_user()
+    project = create_project(user.id)
+    token = make_token(user.username, user.name)
+
+    response = test_client.patch(
+        f"{settings.API_PATH}/projects/{project.pid}",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": "AnotherName"}
+    )
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+
+def test_delete_project_nonexisting_project_returns_404(
+    test_client,
+    create_user,
+    create_project,
+    make_token
+):
+    user = create_user()
+    token = make_token(user.username, user.name)
+    project_id = uuid.uuid4()
+
+    response = test_client.patch(
+        f"{settings.API_PATH}/projects/{project_id}",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": "AnotherName"}
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_delete_project_of_other_user_returns_404(
+    test_client,
+    create_user,
+    create_project,
+    make_token
+):
+    user1, user2 = create_user(), create_user()
+    project = create_project(user1.id, "SuperProject")
+    token = make_token(user2.username, user2.name)
+
+    response = test_client.patch(
+        f"{settings.API_PATH}/projects/{project.pid}",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": "AnotherName"}
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND

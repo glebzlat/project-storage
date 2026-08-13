@@ -27,3 +27,6 @@ class ProjectRepository(Protocol):
         values: dict
     ) -> Optional[Project]:
         ...
+
+    def delete(self, user: User, project_id: uuid.UUID) -> None:
+        ...

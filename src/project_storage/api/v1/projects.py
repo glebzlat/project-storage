@@ -8,7 +8,8 @@ from project_storage.dependencies import (
     get_create_project_uc,
     get_current_user,
     get_get_project_uc,
-    get_update_project_uc
+    get_update_project_uc,
+    get_delete_project_uc
 )
 from project_storage.schemas import (
     CreateProject,
@@ -17,6 +18,7 @@ from project_storage.schemas import (
 )
 from project_storage.models import User
 from project_storage.repositories.project_repository import ProjectExistsError
+from project_storage.use_cases.delete_project import ProjectNotFound
 
 
 router = APIRouter()
@@ -90,4 +92,20 @@ def update_project(
             detail="Project not found"
         )
 
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete("/{project_id}")
+def delete_project(
+    project_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    use_case=Depends(get_delete_project_uc)
+):
+    try:
+        use_case.delete(project_id, current_user)
+    except ProjectNotFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found"
+        )
     return Response(status_code=status.HTTP_204_NO_CONTENT)

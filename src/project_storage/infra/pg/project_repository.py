@@ -2,7 +2,7 @@ import uuid
 
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.exc import IntegrityError
 
 from project_storage.repositories.project_repository import (
@@ -74,3 +74,13 @@ class PgProjectRepository(ProjectRepository):
             else:
                 session.refresh(project)
             return project
+
+    def delete(self, user: User, project_id: uuid.UUID) -> None:
+        stmt = (
+            delete(Project)
+            .where(Project.pid == project_id, Project.owner_id == user.id)
+        )
+
+        with connect() as session:
+            session.execute(stmt)
+            session.commit()

@@ -9,6 +9,7 @@ from project_storage.use_cases.current_user import CurrentUserUseCase
 from project_storage.use_cases.create_project import CreateProjectUseCase
 from project_storage.use_cases.get_project import GetProjectUseCase
 from project_storage.use_cases.update_project import UpdateProjectUseCase
+from project_storage.use_cases.delete_project import DeleteProjectUseCase
 from project_storage.infra.pg.user_repository import PgUserRepository
 from project_storage.infra.pg.project_repository import PgProjectRepository
 from project_storage.core.config import settings
@@ -41,6 +42,10 @@ def get_get_project_uc():
 
 def get_update_project_uc():
     return UpdateProjectUseCase(get_project_repository())
+
+
+def get_delete_project_uc():
+    return DeleteProjectUseCase(get_user_repository())
 
 
 def get_user_repository():
