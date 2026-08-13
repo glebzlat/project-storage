@@ -45,7 +45,7 @@ def get_update_project_uc():
 
 
 def get_delete_project_uc():
-    return DeleteProjectUseCase(get_user_repository())
+    return DeleteProjectUseCase(get_project_repository())
 
 
 def get_user_repository():
