@@ -2,12 +2,13 @@ import uuid
 
 from typing import Optional
 
-from sqlalchemy import select, delete
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from project_storage.repositories.project_repository import (
     ProjectRepository,
-    ProjectExistsError
+    ProjectExistsError,
+    ProjectNotFoundError
 )
 from project_storage.models import User, Project
 from project_storage.database import connect
@@ -50,7 +51,7 @@ class PgProjectRepository(ProjectRepository):
         user: User,
         project_id: uuid.UUID,
         values: dict
-    ) -> Optional[Project]:
+    ) -> Project:
         stmt = (
             select(Project)
             .where(Project.pid == project_id, Project.owner_id == user.id)
@@ -59,7 +60,10 @@ class PgProjectRepository(ProjectRepository):
         with connect() as session:
             project = session.scalar(stmt)
             if project is None:
-                return None
+                raise ProjectNotFoundError(
+                    f"project with id={project_id} not found for "
+                    f"the user with id={user.uid}"
+                )
 
             for field, value in values.items():
                 setattr(project, field, value)
@@ -77,10 +81,16 @@ class PgProjectRepository(ProjectRepository):
 
     def delete(self, user: User, project_id: uuid.UUID) -> None:
         stmt = (
-            delete(Project)
+            select(Project)
             .where(Project.pid == project_id, Project.owner_id == user.id)
         )
 
         with connect() as session:
-            session.execute(stmt)
+            project = session.scalar(stmt)
+            if not project:
+                raise ProjectNotFoundError(
+                    f"project with id={project_id} not found for "
+                    f"the user with id={user.uid}"
+                )
+            session.delete(project)
             session.commit()

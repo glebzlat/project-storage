@@ -4,10 +4,6 @@ from project_storage.models import User
 from project_storage.repositories.project_repository import ProjectRepository
 
 
-class ProjectNotFound(Exception):
-    """Project not found"""
-
-
 class DeleteProjectUseCase:
 
     def __init__(self, project_repository: ProjectRepository) -> None:

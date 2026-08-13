@@ -9,6 +9,10 @@ class ProjectExistsError(Exception):
     """Project with the given name already exists"""
 
 
+class ProjectNotFoundError(Exception):
+    """Project not found"""
+
+
 class ProjectRepository(Protocol):
 
     def create(self, user: User, project: Project) -> None:

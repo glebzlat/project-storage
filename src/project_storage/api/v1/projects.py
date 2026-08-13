@@ -17,8 +17,10 @@ from project_storage.schemas import (
     ExistingProject
 )
 from project_storage.models import User
-from project_storage.repositories.project_repository import ProjectExistsError
-from project_storage.use_cases.delete_project import ProjectNotFound
+from project_storage.repositories.project_repository import (
+    ProjectExistsError,
+    ProjectNotFoundError
+)
 
 
 router = APIRouter()
@@ -79,14 +81,13 @@ def update_project(
     use_case=Depends(get_update_project_uc)
 ):
     try:
-        project = use_case.update(project_id, current_user, update_project)
+        use_case.update(project_id, current_user, update_project)
     except ProjectExistsError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Project with specified name already exists"
         )
-
-    if project is None:
+    except ProjectNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Project not found"
@@ -103,7 +104,7 @@ def delete_project(
 ):
     try:
         use_case.delete(project_id, current_user)
-    except ProjectNotFound:
+    except ProjectNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Project not found"
