@@ -18,7 +18,7 @@ class Token(BaseModel):
 
 class CreateProject(BaseModel):
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
 
 
 class ExistingProject(BaseModel):
