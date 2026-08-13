@@ -1,3 +1,5 @@
+import uuid
+
 from datetime import datetime
 
 from fastapi import status
@@ -122,3 +124,67 @@ def test_create_project_with_no_description(
 
     assert response.status_code == status.HTTP_200_OK
     assert project.description is None
+
+
+def test_get_project(
+    test_client,
+    create_user,
+    create_project,
+    make_token
+):
+    user = create_user()
+    project = create_project(user.id)
+    token = make_token(user.username, user.name)
+
+    response = test_client.get(
+        f"{settings.API_PATH}/projects/{project.pid}",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    data = response.json()
+    assert response.status_code == status.HTTP_200_OK
+    assert data["id"] == str(project.pid)
+    assert data["name"] == project.name
+    assert data["description"] == project.description
+    assert datetime.fromisoformat(data["created_at"]) == project.created_at
+    assert data["owner_id"] == str(user.uid)
+
+
+def test_get_non_existing_project_returns_404(
+    test_client,
+    create_user,
+    make_token
+):
+    user = create_user()
+    token = make_token(user.username, user.name)
+
+    response = test_client.get(
+        f"{settings.API_PATH}/projects/{uuid.uuid4()}",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json() == {"detail": "Project not found"}
+
+
+def test_get_project_of_another_user_returns_404(
+    test_client,
+    create_user,
+    create_project,
+    make_token
+):
+    project_name = "MyUniqueProject"
+    user1, user2 = create_user(), create_user()
+    _, project2 = (
+        create_project(user1.id, name=project_name),
+        create_project(user2.id, name=project_name)
+    )
+    token1 = make_token(user1.username, user1.name)
+
+    response = test_client.get(
+        f"{settings.API_PATH}/projects/{project2.pid}",
+        headers={"Authorization": f"Bearer {token1}"}
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
