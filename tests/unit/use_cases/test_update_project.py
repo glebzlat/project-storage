@@ -2,26 +2,8 @@ import uuid
 
 from project_storage.models import User, Project
 from project_storage.repositories.project_repository import ProjectRepository
-from project_storage.repositories.user_repository import UserRepository
 from project_storage.schemas import UpdateProject
 from project_storage.use_cases.update_project import UpdateProjectUseCase
-
-
-class UserRepositoryFake(UserRepository):
-
-    def __init__(self, user: User):
-        self.user = user
-
-    def get_by_username(self, username):
-        raise NotImplementedError
-
-    def add(self, user: User) -> None:
-        raise NotImplementedError
-
-    def get_by_id(self, id):
-        if self.user is None:
-            return None
-        return self.user if id == self.user.uid else None
 
 
 class ProjectRepositoryFake(ProjectRepository):
@@ -62,19 +44,16 @@ def make_project(user):
     )
 
 
-def make_use_case(user, project):
+def make_use_case(project):
     project_repo = ProjectRepositoryFake(project)
-    use_case = UpdateProjectUseCase(
-        UserRepositoryFake(user),
-        project_repo
-    )
+    use_case = UpdateProjectUseCase(project_repo)
     return use_case, project_repo
 
 
 def test_update_project_applies_only_provided_fields():
     user = make_user()
     project = make_project(user)
-    use_case, project_repo = make_use_case(user, project)
+    use_case, project_repo = make_use_case(project)
 
     result = use_case.update(
         project.pid,
@@ -92,7 +71,7 @@ def test_update_project_applies_only_provided_fields():
 def test_update_project_with_no_fields_passes_empty_values():
     user = make_user()
     project = make_project(user)
-    use_case, project_repo = make_use_case(user, project)
+    use_case, project_repo = make_use_case(project)
 
     result = use_case.update(project.pid, user, UpdateProject())
 
@@ -103,7 +82,7 @@ def test_update_project_with_no_fields_passes_empty_values():
 def test_update_project_explicit_none_clears_field():
     user = make_user()
     project = make_project(user)
-    use_case, project_repo = make_use_case(user, project)
+    use_case, project_repo = make_use_case(project)
 
     result = use_case.update(
         project.pid,
@@ -115,32 +94,10 @@ def test_update_project_explicit_none_clears_field():
     assert project_repo.update_call[2] == {"description": None}
 
 
-def test_update_project_returns_none_when_user_not_found():
-    user = make_user()
-    project = make_project(user)
-    project_repo = ProjectRepositoryFake(project)
-    use_case = UpdateProjectUseCase(
-        UserRepositoryFake(None),
-        project_repo
-    )
-
-    result = use_case.update(
-        project.pid,
-        user,
-        UpdateProject(name="MySuperProject")
-    )
-
-    assert result is None
-    assert project_repo.update_call is None
-
-
 def test_update_project_returns_none_when_project_not_found():
     user = make_user()
     project_repo = ProjectRepositoryFake(None)
-    use_case = UpdateProjectUseCase(
-        UserRepositoryFake(user),
-        project_repo
-    )
+    use_case = UpdateProjectUseCase(project_repo)
 
     result = use_case.update(
         uuid.uuid4(),

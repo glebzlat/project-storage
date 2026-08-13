@@ -40,10 +40,7 @@ def get_get_project_uc():
 
 
 def get_update_project_uc():
-    return UpdateProjectUseCase(
-        get_user_repository(),
-        get_project_repository()
-    )
+    return UpdateProjectUseCase(get_project_repository())
 
 
 def get_user_repository():
