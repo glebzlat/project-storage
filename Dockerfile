@@ -1,5 +1,7 @@
 # syntax=docker/dockerfile:1
 
+ARG INSTALL_TEST_DEV
+
 FROM python:3.14.6-alpine3.23 AS builder
 
 ENV PYTHONUNBUFFERED=1 \
@@ -25,7 +27,11 @@ RUN python3 -m venv "$POETRY_HOME" && \
 
 COPY pyproject.toml poetry.lock ./
 
-RUN $POETRY_HOME/bin/poetry install --no-root
+RUN if [[ -n "$INSTALL_TEST_DEV" ]]; then \
+        $POETRY_HOME/bin/poetry install --with dev; \
+    else \
+        $POETRY_HOME/bin/poetry install --no-root; \
+    fi
 
 
 FROM python:3.14.6-alpine3.23 AS runner
@@ -41,7 +47,7 @@ USER runner
 ENV VIRTUAL_ENV=.venv \
     PATH=/home/runner/app/.venv/bin:$PATH
 
-COPY --from=builder /home/runner/app/$VIRTUAL_ENV $VIRTUAL_ENV
+COPY --from=builder /home/runner/app/ ./
 
 COPY --parents --chown=runner:runner alembic.ini src ./
 

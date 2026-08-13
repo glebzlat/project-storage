@@ -16,7 +16,8 @@ dependencies = [
     "psycopg2-binary (>=2.9.12,<3.0.0)",
     "pwdlib[argon2] (>=0.3.0,<0.4.0)",
     "pyjwt (>=2.13.0,<3.0.0)",
-    "pytest-mock (>=3.15.1,<4.0.0)"
+    "pytest-mock (>=3.15.1,<4.0.0)",
+    "sqlalchemy-utils (>=0.42.1,<0.43.0)"
 ]
 
 [tool.poetry]
@@ -36,9 +37,15 @@ dev = [
 ]
 
 [tool.poe.tasks]
-test = "pytest --cov=src/project_storage"
+test = "pytest -m 'unit and integration'"
+unit_test = "pytest --cov=src/project_storage -m unit"
+integ_test = "pytest -m integration"
+docker_test = "docker compose --profile test up --abort-on-container-exit --exit-code-from app-test"
 pep8 = "flake8 src/project_storage"
 mypy = "mypy src/project_storage"
 
 [tool.mypy]
 plugins = ["pydantic.mypy"]
+
+[tool.pytest]
+pythonpath = ["src"]
