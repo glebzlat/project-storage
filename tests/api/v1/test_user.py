@@ -30,7 +30,8 @@ def test_register_user(test_client):
         json={
             "username": "alice",
             "name": "Alice Doe",
-            "password": "password123"}
+            "password": "password123",
+            "repeat_password": "password123"}
     )
 
     assert response.status_code == HTTPStatus.OK
