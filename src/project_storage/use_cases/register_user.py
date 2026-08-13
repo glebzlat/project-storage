@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pwdlib import PasswordHash
 
 from project_storage.repositories.user_repository import UserRepository
@@ -9,8 +9,8 @@ from project_storage.repositories.user_repository import UserExistsError
 
 
 class RegisterUser(BaseModel):
-    username: str
-    name: str
+    username: str = Field(..., max_length=32)
+    name: str = Field(..., max_length=64)
     password: str
     repeat_password: str
 
