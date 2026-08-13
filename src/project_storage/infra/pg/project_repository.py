@@ -38,3 +38,9 @@ class PgProjectRepository(ProjectRepository):
         )
         with connect() as session:
             return session.scalar(stmt)
+
+    def get_by_id(self, id: uuid.UUID) -> Optional[Project]:
+        stmt = select(Project).where(Project.pid == id)
+
+        with connect() as session:
+            return session.scalar(stmt)

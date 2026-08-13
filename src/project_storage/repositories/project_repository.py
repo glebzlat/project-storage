@@ -1,3 +1,5 @@
+import uuid
+
 from typing import Protocol, Optional
 
 from project_storage.models import User, Project
@@ -13,4 +15,7 @@ class ProjectRepository(Protocol):
         ...
 
     def get_owned_by_name(self, user: User, name: str) -> Optional[Project]:
+        ...
+
+    def get_by_id(self, id: uuid.UUID) -> Optional[Project]:
         ...

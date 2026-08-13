@@ -64,7 +64,8 @@ def project():
     project = Project(
         pid=uuid.uuid4(),
         name="MyProject",
-        description="My New Project"
+        description="My New Project",
+        created_at=datetime.now(timezone.utc)
     )
     use_case = CreateProjectUseCaseMock(project)
     app.dependency_overrides[get_create_project_uc] = lambda: use_case
@@ -73,6 +74,7 @@ def project():
 
 def test_create_project_as_authenticated_user(
     test_client,
+    add_user,
     access_token,
     project
 ):
@@ -83,4 +85,11 @@ def test_create_project_as_authenticated_user(
     )
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == {"id": str(project.pid), "name": project.name}
+    data = response.json()
+    assert data["id"] == str(project.pid)
+    assert data["name"] == project.name
+    assert data["description"] == project.description
+    assert data["owner_id"] == str(add_user.uid)
+    assert (
+        datetime.fromisoformat(data["created_at"]) == project.created_at
+    )
