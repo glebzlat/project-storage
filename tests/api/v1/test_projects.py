@@ -188,3 +188,129 @@ def test_get_project_of_another_user_returns_404(
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
+
+def test_update_project(
+    test_client,
+    create_user,
+    create_project,
+    make_token
+):
+    user = create_user()
+    project = create_project(
+        user.id, name="MyAwesomeProject", description="Description1"
+    )
+    token = make_token(user.username, user.name)
+
+    response = test_client.patch(
+        f"{settings.API_PATH}/projects/{project.pid}",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": "MySuperProject", "description": "Description2"}
+    )
+
+    with connect() as session:
+        db_project = session.scalar(
+            select(Project).where(Project.owner_id == user.id)
+        )
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert db_project.name == "MySuperProject"
+    assert db_project.description == "Description2"
+
+
+def test_update_project_set_description_to_none(
+    test_client,
+    create_user,
+    create_project,
+    make_token
+):
+    user = create_user()
+    project = create_project(
+        user.id, name="MyAwesomeProject", description="Description1"
+    )
+    token = make_token(user.username, user.name)
+
+    response = test_client.patch(
+        f"{settings.API_PATH}/projects/{project.pid}",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"description": None}
+    )
+
+    with connect() as session:
+        db_project = session.scalar(
+            select(Project).where(Project.owner_id == user.id)
+        )
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert db_project.name == project.name
+    assert db_project.description is None
+
+
+def test_update_project_unchanged(
+    test_client,
+    create_user,
+    create_project,
+    make_token
+):
+    user = create_user()
+    project = create_project(
+        user.id, name="MyAwesomeProject", description="Description1"
+    )
+    token = make_token(user.username, user.name)
+
+    response = test_client.patch(
+        f"{settings.API_PATH}/projects/{project.pid}",
+        headers={"Authorization": f"Bearer {token}"},
+        json={}
+    )
+
+    with connect() as session:
+        db_project = session.scalar(
+            select(Project).where(Project.owner_id == user.id)
+        )
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert db_project.name == project.name
+    assert db_project.description == project.description
+
+
+def test_update_project_rename_to_existing_name_returns_409(
+    test_client,
+    create_user,
+    create_project,
+    make_token
+):
+    user = create_user()
+    project1 = create_project(user.id, name="project1")
+    project2 = create_project(user.id, name="project2")
+    token = make_token(user.username, user.name)
+
+    response = test_client.patch(
+        f"{settings.API_PATH}/projects/{project2.pid}",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": project1.name}
+    )
+
+    assert response.status_code == status.HTTP_409_CONFLICT
+    assert response.json() == {
+        "detail": "Project with specified name already exists"
+    }
+
+
+def test_update_project_nonexisting_project_returns_404(
+    test_client,
+    create_user,
+    create_project,
+    make_token
+):
+    user1, user2 = create_user(), create_user()
+    project1 = create_project(user1.id, name="project")
+    token = make_token(user2.username, user2.name)
+
+    response = test_client.patch(
+        f"{settings.API_PATH}/projects/{project1.pid}",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": "AnotherName"}
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json() == {"detail": "Project not found"}

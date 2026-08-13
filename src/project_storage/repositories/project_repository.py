@@ -19,3 +19,11 @@ class ProjectRepository(Protocol):
 
     def get_by_id(self, id: uuid.UUID) -> Optional[Project]:
         ...
+
+    def update(
+        self,
+        user: User,
+        project_id: uuid.UUID,
+        values: dict
+    ) -> Optional[Project]:
+        ...

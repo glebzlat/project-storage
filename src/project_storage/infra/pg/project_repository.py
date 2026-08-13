@@ -44,3 +44,33 @@ class PgProjectRepository(ProjectRepository):
 
         with connect() as session:
             return session.scalar(stmt)
+
+    def update(
+        self,
+        user: User,
+        project_id: uuid.UUID,
+        values: dict
+    ) -> Optional[Project]:
+        stmt = (
+            select(Project)
+            .where(Project.pid == project_id, Project.owner_id == user.id)
+        )
+
+        with connect() as session:
+            project = session.scalar(stmt)
+            if project is None:
+                return None
+
+            for field, value in values.items():
+                setattr(project, field, value)
+
+            try:
+                session.commit()
+            except IntegrityError as e:
+                raise ProjectExistsError(
+                    f"user with id={user.uid} already has a project "
+                    f"named={values.get('name')!r}"
+                ) from e
+            else:
+                session.refresh(project)
+            return project
