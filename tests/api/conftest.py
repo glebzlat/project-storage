@@ -18,7 +18,7 @@ from pwdlib import PasswordHash
 
 from project_storage.main import app
 from project_storage.database import _engine, connect
-from project_storage.models import Base, User
+from project_storage.models import Base, User, Project
 from project_storage.core.config import settings
 
 
@@ -94,6 +94,30 @@ def create_user():
             session.refresh(u)
 
         return u
+
+    return _create
+
+
+@pytest.fixture
+def create_project():
+
+    def _create(user_db_id: int, name=None, description=None):
+        if name is None:
+            name = f"Project{uuid.uuid4().hex[:8]}"
+
+        p = Project(
+            pid=uuid.uuid4(),
+            name=name,
+            description=description,
+            owner_id=user_db_id
+        )
+
+        with connect() as session:
+            session.add(p)
+            session.commit()
+            session.refresh(p)
+
+        return p
 
     return _create
 

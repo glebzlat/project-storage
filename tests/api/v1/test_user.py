@@ -1,26 +1,11 @@
 import uuid
-import jwt
 
-from unittest import mock
 from http import HTTPStatus
-from datetime import timedelta, datetime, timezone
 
 from sqlalchemy import select
 
-from project_storage.main import app
 from project_storage.core.config import settings
 from project_storage.database import connect
-from project_storage.dependencies import (
-    get_register_user_uc,
-    get_authenticate_user_uc,
-    get_current_user_uc
-)
-from project_storage.use_cases.register_user import (
-    RegisteredUser,
-    UsernameAlreadyTakenError
-)
-from project_storage.use_cases.authenticate_user import AuthenticateUserUseCase
-from project_storage.use_cases.current_user import CurrentUserUseCase
 from project_storage.models import User
 
 
@@ -30,7 +15,8 @@ def test_register_user(test_client):
         json={
             "username": "alice",
             "name": "Alice Doe",
-            "password": "password123"}
+            "password": "password123",
+            "repeat_password": "password123"}
     )
 
     assert response.status_code == HTTPStatus.OK

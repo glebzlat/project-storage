@@ -7,6 +7,10 @@ from project_storage.use_cases.register_user import RegisterUserUseCase
 from project_storage.use_cases.authenticate_user import AuthenticateUserUseCase
 from project_storage.use_cases.current_user import CurrentUserUseCase
 from project_storage.use_cases.create_project import CreateProjectUseCase
+from project_storage.use_cases.get_project import GetProjectUseCase
+from project_storage.use_cases.update_project import UpdateProjectUseCase
+from project_storage.use_cases.delete_project import DeleteProjectUseCase
+from project_storage.use_cases.get_all_projects import GetAllProjectsUseCase
 from project_storage.infra.pg.user_repository import PgUserRepository
 from project_storage.infra.pg.project_repository import PgProjectRepository
 from project_storage.core.config import settings
@@ -33,6 +37,22 @@ def get_create_project_uc():
     return CreateProjectUseCase(get_project_repository())
 
 
+def get_get_project_uc():
+    return GetProjectUseCase(get_user_repository(), get_project_repository())
+
+
+def get_update_project_uc():
+    return UpdateProjectUseCase(get_project_repository())
+
+
+def get_delete_project_uc():
+    return DeleteProjectUseCase(get_project_repository())
+
+
+def get_get_all_projects_uc():
+    return GetAllProjectsUseCase(get_project_repository())
+
+
 def get_user_repository():
     return PgUserRepository()
 
@@ -52,4 +72,3 @@ def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"}
     )
-
