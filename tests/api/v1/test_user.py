@@ -80,6 +80,31 @@ def test_login_user(test_client, create_user, make_token):
     assert response_data["token_type"] == "bearer"
     assert response_data["access_token"] == expected_jwt
 
+    expected_jwt_data = jwt.decode(
+        expected_jwt,
+        settings.JWT_SECRET_KEY,
+        algorithms=[settings.JWT_ALGORITHM]
+    )
+    returned_jwt_data = jwt.decode(
+        response_data["access_token"],
+        settings.JWT_SECRET_KEY,
+        algorithms=[settings.JWT_ALGORITHM]
+    )
+
+    assert expected_jwt_data["sub"] == returned_jwt_data["sub"]
+    assert expected_jwt_data["name"] == returned_jwt_data["name"]
+
+    def fromtimestamp(ts):
+        return datetime.fromtimestamp(ts, timezone.utc)
+
+    expected_iat = fromtimestamp(expected_jwt_data["iat"])
+    returned_iat = fromtimestamp(returned_jwt_data["iat"])
+    assert abs(expected_iat - returned_iat) < timedelta(seconds=1)
+
+    expected_exp = fromtimestamp(expected_jwt_data["exp"])
+    returned_exp = fromtimestamp(returned_jwt_data["exp"])
+    assert abs(expected_exp - returned_exp) < timedelta(seconds=1)
+
 
 def test_login_nonexistent_user_returns_401(test_client, mocker):
     response = test_client.post(
