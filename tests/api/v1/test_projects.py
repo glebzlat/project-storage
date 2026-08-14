@@ -1,86 +1,418 @@
 import uuid
-import pytest
-import jwt
 
-from datetime import timedelta, datetime, timezone
-from unittest import mock
+from datetime import datetime
 
 from fastapi import status
 
-from project_storage.models import User
-from project_storage.dependencies import (
-    get_current_user_uc,
-    get_create_project_uc
-)
-from project_storage.main import app
+from sqlalchemy import select
+
 from project_storage.core.config import settings
+from project_storage.database import connect
 from project_storage.models import Project
-
-
-class CreateProjectUseCaseMock:
-
-    def __init__(self, project):
-        self.project = project
-
-    def create(self, user, name: str, description: str):
-        assert self.project.name == name
-        assert self.project.description == description
-        return self.project
-
-
-@pytest.fixture()
-def add_user():
-    user = User(
-        uid=uuid.uuid4(),
-        username="johndoe",
-        name="John Doe"
-    )
-    use_case_mock = mock.Mock()
-    use_case_mock.get.return_value = user
-    app.dependency_overrides[get_current_user_uc] = lambda: use_case_mock
-    return user
-
-
-@pytest.fixture()
-def access_token(add_user):
-    now = datetime.now(timezone.utc)
-    expire = now + timedelta(minutes=settings.JWT_EXPIRATION_TIME_MINUTES)
-    jwt_data = {
-        "sub": add_user.username,
-        "name": add_user.name,
-        "exp": expire,
-        "iat": now
-    }
-    token = jwt.encode(
-        jwt_data,
-        settings.JWT_SECRET_KEY,
-        algorithm=settings.JWT_ALGORITHM
-    )
-    return token
-
-
-@pytest.fixture()
-def project():
-    project = Project(
-        pid=uuid.uuid4(),
-        name="MyProject",
-        description="My New Project"
-    )
-    use_case = CreateProjectUseCaseMock(project)
-    app.dependency_overrides[get_create_project_uc] = lambda: use_case
-    return project
 
 
 def test_create_project_as_authenticated_user(
     test_client,
-    access_token,
-    project
+    create_user,
+    make_token,
 ):
+    project_name, project_description = "MyProject", "My Awesome Project"
+    user = create_user()
+    token = make_token(user.username, user.name)
+
     response = test_client.post(
         f"{settings.API_PATH}/projects/create",
-        headers={"Authorization": f"Bearer {access_token}"},
-        json={"name": project.name, "description": project.description}
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": project_name, "description": project_description}
+    )
+
+    with connect() as session:
+        project = session.scalar(
+            select(Project).where(Project.owner_id == user.id)
+        )
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert data["id"] == str(project.pid)
+    assert data["name"] == project.name
+    assert data["description"] == project.description
+    assert data["owner_id"] == str(user.uid)
+    assert (
+        datetime.fromisoformat(data["created_at"]) == project.created_at
+    )
+
+
+def test_create_project_duplicate_project_name_returns_409(
+    test_client,
+    create_user,
+    make_token
+):
+    project_name = "MyProject"
+    user = create_user()
+    token = make_token(user.username, user.name)
+
+    response1 = test_client.post(
+        f"{settings.API_PATH}/projects/create",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": project_name, "description": "My Awesome Project"}
+    )
+    response2 = test_client.post(
+        f"{settings.API_PATH}/projects/create",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": project_name, "description": "My Super Project"}
+    )
+
+    assert response1.status_code == status.HTTP_200_OK
+    assert response2.status_code == status.HTTP_409_CONFLICT
+    assert response2.json() == {
+        "detail": "Project with specified name already exists"
+    }
+
+
+def test_create_project_with_same_name_as_another_user(
+    test_client,
+    create_user,
+    make_token
+):
+    project_name = "MyProject"
+    user1 = create_user(username="johndoe", name="John")
+    user2 = create_user(username="janedoe", name="Jane")
+    token1 = make_token(user1.username, user1.name)
+    token2 = make_token(user2.username, user2.name)
+
+    response1 = test_client.post(
+        f"{settings.API_PATH}/projects/create",
+        headers={"Authorization": f"Bearer {token1}"},
+        json={"name": project_name, "description": "My Awesome Project"}
+    )
+    response2 = test_client.post(
+        f"{settings.API_PATH}/projects/create",
+        headers={"Authorization": f"Bearer {token2}"},
+        json={"name": project_name, "description": "My Awesome Project"}
+    )
+
+    def prepare_stmt(for_user):
+        return select(Project).where(Project.owner_id == for_user.id)
+
+    with connect() as session:
+        project1 = session.scalar(prepare_stmt(user1))
+        project2 = session.scalar(prepare_stmt(user2))
+
+    assert response1.status_code == status.HTTP_200_OK
+    assert response2.status_code == status.HTTP_200_OK
+    assert project1.owner_id != project2.owner_id
+
+
+def test_create_project_with_no_description(
+    test_client,
+    create_user,
+    make_token
+):
+    user = create_user()
+    token = make_token(user.username, user.name)
+
+    response = test_client.post(
+        f"{settings.API_PATH}/projects/create",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": "Project"}
+    )
+
+    with connect() as session:
+        project = session.scalar(
+            select(Project).where(Project.owner_id == user.id)
+        )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert project.description is None
+
+
+def test_get_project(
+    test_client,
+    create_user,
+    create_project,
+    make_token
+):
+    user = create_user()
+    project = create_project(user.id)
+    token = make_token(user.username, user.name)
+
+    response = test_client.get(
+        f"{settings.API_PATH}/projects/{project.pid}",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    data = response.json()
+    assert response.status_code == status.HTTP_200_OK
+    assert data["id"] == str(project.pid)
+    assert data["name"] == project.name
+    assert data["description"] == project.description
+    assert datetime.fromisoformat(data["created_at"]) == project.created_at
+    assert data["owner_id"] == str(user.uid)
+
+
+def test_get_non_existing_project_returns_404(
+    test_client,
+    create_user,
+    make_token
+):
+    user = create_user()
+    token = make_token(user.username, user.name)
+
+    response = test_client.get(
+        f"{settings.API_PATH}/projects/{uuid.uuid4()}",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json() == {"detail": "Project not found"}
+
+
+def test_get_project_of_another_user_returns_404(
+    test_client,
+    create_user,
+    create_project,
+    make_token
+):
+    project_name = "MyUniqueProject"
+    user1, user2 = create_user(), create_user()
+    _, project2 = (
+        create_project(user1.id, name=project_name),
+        create_project(user2.id, name=project_name)
+    )
+    token1 = make_token(user1.username, user1.name)
+
+    response = test_client.get(
+        f"{settings.API_PATH}/projects/{project2.pid}",
+        headers={"Authorization": f"Bearer {token1}"}
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_update_project(
+    test_client,
+    create_user,
+    create_project,
+    make_token
+):
+    user = create_user()
+    project = create_project(
+        user.id, name="MyAwesomeProject", description="Description1"
+    )
+    token = make_token(user.username, user.name)
+
+    response = test_client.patch(
+        f"{settings.API_PATH}/projects/{project.pid}",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": "MySuperProject", "description": "Description2"}
+    )
+
+    with connect() as session:
+        db_project = session.scalar(
+            select(Project).where(Project.owner_id == user.id)
+        )
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert db_project.name == "MySuperProject"
+    assert db_project.description == "Description2"
+
+
+def test_update_project_set_description_to_none(
+    test_client,
+    create_user,
+    create_project,
+    make_token
+):
+    user = create_user()
+    project = create_project(
+        user.id, name="MyAwesomeProject", description="Description1"
+    )
+    token = make_token(user.username, user.name)
+
+    response = test_client.patch(
+        f"{settings.API_PATH}/projects/{project.pid}",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"description": None}
+    )
+
+    with connect() as session:
+        db_project = session.scalar(
+            select(Project).where(Project.owner_id == user.id)
+        )
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert db_project.name == project.name
+    assert db_project.description is None
+
+
+def test_update_project_unchanged(
+    test_client,
+    create_user,
+    create_project,
+    make_token
+):
+    user = create_user()
+    project = create_project(
+        user.id, name="MyAwesomeProject", description="Description1"
+    )
+    token = make_token(user.username, user.name)
+
+    response = test_client.patch(
+        f"{settings.API_PATH}/projects/{project.pid}",
+        headers={"Authorization": f"Bearer {token}"},
+        json={}
+    )
+
+    with connect() as session:
+        db_project = session.scalar(
+            select(Project).where(Project.owner_id == user.id)
+        )
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert db_project.name == project.name
+    assert db_project.description == project.description
+
+
+def test_update_project_rename_to_existing_name_returns_409(
+    test_client,
+    create_user,
+    create_project,
+    make_token
+):
+    user = create_user()
+    project1 = create_project(user.id, name="project1")
+    project2 = create_project(user.id, name="project2")
+    token = make_token(user.username, user.name)
+
+    response = test_client.patch(
+        f"{settings.API_PATH}/projects/{project2.pid}",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": project1.name}
+    )
+
+    assert response.status_code == status.HTTP_409_CONFLICT
+    assert response.json() == {
+        "detail": "Project with specified name already exists"
+    }
+
+
+def test_update_project_nonexisting_project_returns_404(
+    test_client,
+    create_user,
+    create_project,
+    make_token
+):
+    user1, user2 = create_user(), create_user()
+    project1 = create_project(user1.id, name="project")
+    token = make_token(user2.username, user2.name)
+
+    response = test_client.patch(
+        f"{settings.API_PATH}/projects/{project1.pid}",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": "AnotherName"}
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json() == {"detail": "Project not found"}
+
+
+def test_delete_project(
+    test_client,
+    create_user,
+    create_project,
+    make_token
+):
+    user = create_user()
+    project = create_project(user.id)
+    token = make_token(user.username, user.name)
+
+    response = test_client.delete(
+        f"{settings.API_PATH}/projects/{project.pid}",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+
+def test_delete_project_nonexisting_project_returns_404(
+    test_client,
+    create_user,
+    create_project,
+    make_token
+):
+    user = create_user()
+    token = make_token(user.username, user.name)
+    project_id = uuid.uuid4()
+
+    response = test_client.delete(
+        f"{settings.API_PATH}/projects/{project_id}",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_delete_project_of_other_user_returns_404(
+    test_client,
+    create_user,
+    create_project,
+    make_token
+):
+    user1, user2 = create_user(), create_user()
+    project = create_project(user1.id, "SuperProject")
+    token = make_token(user2.username, user2.name)
+
+    response = test_client.delete(
+        f"{settings.API_PATH}/projects/{project.pid}",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_get_all_projects(
+    test_client,
+    create_user,
+    create_project,
+    make_token
+):
+    user = create_user()
+    projects = [create_project(user.id) for _ in range(10)]
+    token = make_token(user.username, user.name)
+
+    response = test_client.get(
+        f"{settings.API_PATH}/projects",
+        headers={"Authorization": f"Bearer {token}"}
     )
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == {"id": str(project.pid), "name": project.name}
+    data = response.json()
+    assert data["n"] == len(projects)
+    for i, project_dict in enumerate(data["projects"]):
+        assert project_dict["id"] == str(projects[i].pid)
+        assert project_dict["name"] == projects[i].name
+        assert project_dict["description"] == projects[i].description
+        assert project_dict["owner_id"] == str(user.uid)
+        assert (
+            datetime.fromisoformat(project_dict["created_at"]) ==
+            projects[i].created_at
+        )
+
+
+def test_get_all_projects_empty_list(
+    test_client,
+    create_user,
+    create_project,
+    make_token
+):
+    user = create_user()
+    token = make_token(user.username, user.name)
+
+    response = test_client.get(
+        f"{settings.API_PATH}/projects",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert data == {"n": 0, "projects": []}
