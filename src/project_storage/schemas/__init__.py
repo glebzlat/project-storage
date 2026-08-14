@@ -7,8 +7,8 @@ from pydantic import BaseModel, Field
 
 
 class User(BaseModel):
-    username: str
-    password: str
+    username: str = Field(..., min_length=1, max_length=64)
+    password: str = Field(..., min_length=8, max_length=128)
 
 
 class Token(BaseModel):
@@ -17,12 +17,12 @@ class Token(BaseModel):
 
 
 class CreateProject(BaseModel):
-    name: str
+    name: str = Field(..., min_length=1, max_length=64)
     description: Optional[str] = None
 
 
 class UpdateProject(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=64)
+    name: Optional[str] = Field(..., min_length=1, max_length=64)
     description: Optional[str] = None
 
 
