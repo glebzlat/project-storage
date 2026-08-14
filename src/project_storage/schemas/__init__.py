@@ -22,7 +22,7 @@ class CreateProject(BaseModel):
 
 
 class UpdateProject(BaseModel):
-    name: Optional[str] = Field(..., min_length=1, max_length=64)
+    name: Optional[str] = Field(None, min_length=1, max_length=64)
     description: Optional[str] = None
 
 
