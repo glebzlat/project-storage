@@ -79,6 +79,16 @@ class PgProjectRepository(ProjectRepository):
                 session.refresh(project)
             return project
 
+    def get_all(self, user: User) -> list[Project]:
+        stmt = (
+            select(Project)
+            .where(Project.owner_id == user.id)
+            .order_by(Project.id)
+        )
+
+        with connect() as session:
+            return list(session.scalars(stmt))
+
     def delete(self, user: User, project_id: uuid.UUID) -> None:
         stmt = (
             select(Project)

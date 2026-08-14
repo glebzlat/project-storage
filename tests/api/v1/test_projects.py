@@ -368,3 +368,51 @@ def test_delete_project_of_other_user_returns_404(
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_get_all_projects(
+    test_client,
+    create_user,
+    create_project,
+    make_token
+):
+    user = create_user()
+    projects = [create_project(user.id) for _ in range(10)]
+    token = make_token(user.username, user.name)
+
+    response = test_client.get(
+        f"{settings.API_PATH}/projects",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert data["n"] == len(projects)
+    for i, project_dict in enumerate(data["projects"]):
+        assert project_dict["id"] == str(projects[i].pid)
+        assert project_dict["name"] == projects[i].name
+        assert project_dict["description"] == projects[i].description
+        assert project_dict["owner_id"] == str(user.uid)
+        assert (
+            datetime.fromisoformat(project_dict["created_at"]) ==
+            projects[i].created_at
+        )
+
+
+def test_get_all_projects_empty_list(
+    test_client,
+    create_user,
+    create_project,
+    make_token
+):
+    user = create_user()
+    token = make_token(user.username, user.name)
+
+    response = test_client.get(
+        f"{settings.API_PATH}/projects",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert data == {"n": 0, "projects": []}

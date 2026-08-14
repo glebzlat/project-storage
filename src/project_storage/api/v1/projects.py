@@ -9,12 +9,14 @@ from project_storage.dependencies import (
     get_current_user,
     get_get_project_uc,
     get_update_project_uc,
-    get_delete_project_uc
+    get_delete_project_uc,
+    get_get_all_projects_uc
 )
 from project_storage.schemas import (
     CreateProject,
     UpdateProject,
-    ExistingProject
+    ExistingProject,
+    ExistingProjectList
 )
 from project_storage.models import User
 from project_storage.repositories.project_repository import (
@@ -110,3 +112,22 @@ def delete_project(
             detail="Project not found"
         )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("")
+def get_all_projects(
+    current_user: Annotated[User, Depends(get_current_user)],
+    use_case=Depends(get_get_all_projects_uc)
+):
+    projects = use_case.get(current_user)
+    lst = ExistingProjectList(n=len(projects), projects=[])
+    for p in projects:
+        schema = ExistingProject(
+            id=p.pid,
+            name=p.name,
+            description=p.description,
+            created_at=p.created_at,
+            owner_id=current_user.uid
+        )
+        lst.projects.append(schema)
+    return lst

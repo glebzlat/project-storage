@@ -32,3 +32,8 @@ class ExistingProject(BaseModel):
     description: Optional[str]
     created_at: datetime
     owner_id: uuid.UUID
+
+
+class ExistingProjectList(BaseModel):
+    n: int
+    projects: list[ExistingProject]
