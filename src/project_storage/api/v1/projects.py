@@ -78,7 +78,7 @@ def get_project(
         name=project.name,
         description=project.description,
         created_at=project.created_at,
-        owner_id=current_user.uid
+        owner_id=project.owner.uid
     )
 
 
@@ -134,7 +134,7 @@ def get_all_projects(
             name=p.name,
             description=p.description,
             created_at=p.created_at,
-            owner_id=current_user.uid
+            owner_id=p.owner.uid
         )
         lst.projects.append(schema)
     return lst

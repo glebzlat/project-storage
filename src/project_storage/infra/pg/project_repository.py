@@ -4,6 +4,7 @@ from typing import Optional
 
 from sqlalchemy import select, union_all
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload, selectinload
 
 from project_storage.repositories.project_repository import (
     ProjectRepository,
@@ -40,7 +41,11 @@ class PgProjectRepository(ProjectRepository):
             return session.scalar(stmt)
 
     def get_by_id(self, id: uuid.UUID) -> Optional[Project]:
-        stmt = select(Project).where(Project.pid == id)
+        stmt = (
+            select(Project)
+            .where(Project.pid == id)
+            .options(joinedload(Project.owner))
+        )
 
         with connect() as session:
             return session.scalar(stmt)
@@ -82,7 +87,11 @@ class PgProjectRepository(ProjectRepository):
             union_all(stmt_owner, stmt_participant)
             .order_by(Project.id)
         )
-        orm_stmt = select(Project).from_statement(stmt_union)
+        orm_stmt = (
+            select(Project)
+            .from_statement(stmt_union)
+            .options(selectinload(Project.owner))
+        )
 
         with connect() as session:
             return list(session.scalars(orm_stmt))
