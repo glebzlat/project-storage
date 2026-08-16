@@ -48,3 +48,11 @@ class Project(Base):
     __table_args__ = (
         UniqueConstraint("name", "owner_id", name="unique_name_owner_id"),
     )
+
+
+class ProjectParticipantAssociation(Base):
+    __tablename__ = "project_participants"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    project_id: Mapped[int] = mapped_column(ForeignKey(Project.id))
+    user_id: Mapped[int] = mapped_column(ForeignKey(User.id))

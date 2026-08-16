@@ -23,6 +23,7 @@ from project_storage.repositories.project_repository import (
     ProjectExistsError,
     ProjectNotFoundError
 )
+from project_storage.project_access import AccessError
 
 
 router = APIRouter()
@@ -60,12 +61,18 @@ def get_project(
     current_user: Annotated[User, Depends(get_current_user)],
     use_case=Depends(get_get_project_uc)
 ):
-    project = use_case.get(current_user, project_id)
-    if project is None:
+    access_error = False
+    try:
+        project = use_case.get(current_user, project_id)
+    except AccessError:
+        access_error = True
+
+    if access_error or project is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Project not found"
         )
+
     return ExistingProject(
         id=project.pid,
         name=project.name,
@@ -89,7 +96,7 @@ def update_project(
             status_code=status.HTTP_409_CONFLICT,
             detail="Project with specified name already exists"
         )
-    except ProjectNotFoundError:
+    except (ProjectNotFoundError, AccessError):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Project not found"
@@ -106,7 +113,7 @@ def delete_project(
 ):
     try:
         use_case.delete(project_id, current_user)
-    except ProjectNotFoundError:
+    except (ProjectNotFoundError, AccessError):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Project not found"
