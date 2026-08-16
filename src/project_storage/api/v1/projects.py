@@ -17,7 +17,8 @@ from project_storage.schemas import (
     CreateProject,
     UpdateProject,
     ExistingProject,
-    ExistingProjectList
+    ExistingProjectList,
+    AddParticipant
 )
 from project_storage.models import User
 from project_storage.repositories.project_repository import (
@@ -146,12 +147,12 @@ def get_all_projects(
 @router.post("/{project_id}/participants")
 def invite_participant(
     project_id: uuid.UUID,
-    participant_username: str,
+    participant: AddParticipant,
     current_user: Annotated[User, Depends(get_current_user)],
     use_case=Depends(get_add_participant_uc)
 ):
     try:
-        use_case.add(project_id, current_user.uid, participant_username)
+        use_case.add(project_id, current_user.uid, participant.username)
     except AccessError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

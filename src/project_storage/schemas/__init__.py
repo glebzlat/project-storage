@@ -37,3 +37,7 @@ class ExistingProject(BaseModel):
 class ExistingProjectList(BaseModel):
     n: int
     projects: list[ExistingProject]
+
+
+class AddParticipant(BaseModel):
+    username: str
