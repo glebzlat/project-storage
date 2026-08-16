@@ -416,3 +416,92 @@ def test_get_all_projects_empty_list(
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     assert data == {"n": 0, "projects": []}
+
+
+def test_add_participant_by_owner_returns_204(
+    test_client, create_user, create_project, make_token
+):
+    owner = create_user(username="owner_add_1")
+    participant = create_user(username="part_add_1")
+    project = create_project(owner.id)
+    token = make_token(owner.username, owner.name)
+
+    response = test_client.post(
+        f"{settings.API_PATH}/projects/{project.pid}/participants",
+        headers={"Authorization": f"Bearer {token}"},
+        params={"participant_username": participant.username}
+    )
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+
+def test_add_participant_by_non_owner_returns_403(
+    test_client, create_user, create_project, make_token
+):
+    owner = create_user(username="owner_add_2")
+    other = create_user(username="other_add_2")
+    participant = create_user(username="part_add_2")
+    project = create_project(owner.id)
+    token = make_token(other.username, other.name)
+
+    response = test_client.post(
+        f"{settings.API_PATH}/projects/{project.pid}/participants",
+        headers={"Authorization": f"Bearer {token}"},
+        params={"participant_username": participant.username}
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_add_participant_nonexistent_project_returns_404(
+    test_client, create_user, make_token
+):
+    owner = create_user(username="owner_add_3")
+    token = make_token(owner.username, owner.name)
+
+    response = test_client.post(
+        f"{settings.API_PATH}/projects/{uuid.uuid4()}/participants",
+        headers={"Authorization": f"Bearer {token}"},
+        params={"participant_username": "someone"}
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_add_participant_nonexistent_user_returns_404(
+    test_client, create_user, create_project, make_token
+):
+    owner = create_user(username="owner_add_4")
+    project = create_project(owner.id)
+    token = make_token(owner.username, owner.name)
+
+    response = test_client.post(
+        f"{settings.API_PATH}/projects/{project.pid}/participants",
+        headers={"Authorization": f"Bearer {token}"},
+        params={"participant_username": "nonexistent_user_xyz"}
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_add_participant_duplicate_returns_409(
+    test_client, create_user, create_project, make_token
+):
+    owner = create_user(username="owner_add_5")
+    participant = create_user(username="part_add_5")
+    project = create_project(owner.id)
+    token = make_token(owner.username, owner.name)
+
+    r1 = test_client.post(
+        f"{settings.API_PATH}/projects/{project.pid}/participants",
+        headers={"Authorization": f"Bearer {token}"},
+        params={"participant_username": participant.username}
+    )
+    assert r1.status_code == status.HTTP_204_NO_CONTENT
+
+    r2 = test_client.post(
+        f"{settings.API_PATH}/projects/{project.pid}/participants",
+        headers={"Authorization": f"Bearer {token}"},
+        params={"participant_username": participant.username}
+    )
+    assert r2.status_code == status.HTTP_409_CONFLICT

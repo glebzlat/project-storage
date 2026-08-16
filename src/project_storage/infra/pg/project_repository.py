@@ -117,3 +117,22 @@ class PgProjectRepository(ProjectRepository):
 
         with connect() as session:
             return session.scalar(stmt) is not None
+
+    def add_participant(
+        self,
+        project_id: uuid.UUID,
+        user_id: uuid.UUID
+    ) -> None:
+        stmt_project = select(Project).where(Project.pid == project_id)
+        stmt_user = select(User).where(User.uid == user_id)
+        with connect() as session:
+            project = session.scalars(stmt_project).one()
+            user = session.scalars(stmt_user).one()
+
+            assoc = ProjectParticipantAssociation(
+                project_id=project.id,
+                user_id=user.id
+            )
+
+            session.add(assoc)
+            session.commit()

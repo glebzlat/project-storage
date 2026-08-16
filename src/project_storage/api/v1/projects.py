@@ -10,7 +10,8 @@ from project_storage.dependencies import (
     get_get_project_uc,
     get_update_project_uc,
     get_delete_project_uc,
-    get_get_all_projects_uc
+    get_get_all_projects_uc,
+    get_add_participant_uc
 )
 from project_storage.schemas import (
     CreateProject,
@@ -21,8 +22,10 @@ from project_storage.schemas import (
 from project_storage.models import User
 from project_storage.repositories.project_repository import (
     ProjectExistsError,
-    ProjectNotFoundError
+    ProjectNotFoundError,
+    ParticipantExistsError
 )
+from project_storage.repositories.user_repository import UserNotFoundError
 from project_storage.project_access import AccessError
 
 
@@ -138,3 +141,35 @@ def get_all_projects(
         )
         lst.projects.append(schema)
     return lst
+
+
+@router.post("/{project_id}/participants")
+def invite_participant(
+    project_id: uuid.UUID,
+    participant_username: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+    use_case=Depends(get_add_participant_uc)
+):
+    try:
+        use_case.add(project_id, current_user.uid, participant_username)
+    except AccessError:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to perform an action"
+        )
+    except ProjectNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found"
+        )
+    except UserNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    except ParticipantExistsError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Participant already added to the project"
+        )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

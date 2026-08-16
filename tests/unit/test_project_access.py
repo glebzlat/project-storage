@@ -5,7 +5,10 @@ from unittest import mock
 
 from project_storage.models import User, Project
 from project_storage.project_access import ProjectAccess, AccessError
-from project_storage.repositories.project_repository import ProjectNotFoundError
+from project_storage.repositories.project_repository import (
+    ProjectNotFoundError,
+    ParticipantExistsError
+)
 
 
 def make_user(id=1):
@@ -30,9 +33,10 @@ def test_get_by_owner():
     user = make_user(id=1)
     project = make_project(user)
 
+    user_repo_mock = mock.MagicMock()
     repo_mock = mock.MagicMock()
     repo_mock.get_by_id.return_value = project
-    access = ProjectAccess(repo_mock)
+    access = ProjectAccess(repo_mock, user_repo_mock)
 
     p = access.get(user, project.pid)
 
@@ -43,9 +47,10 @@ def test_get_by_owner():
 def test_get_project_not_found():
     user = make_user()
 
+    user_repo_mock = mock.MagicMock()
     repo_mock = mock.MagicMock()
     repo_mock.get_by_id.return_value = None
-    access = ProjectAccess(repo_mock)
+    access = ProjectAccess(repo_mock, user_repo_mock)
 
     p = access.get(user, uuid.uuid4())
     assert p is None
@@ -56,10 +61,11 @@ def test_get_by_participant():
     user = make_user(id=2)
     project = make_project(owner)
 
+    user_repo_mock = mock.MagicMock()
     repo_mock = mock.MagicMock()
     repo_mock.get_by_id.return_value = project
     repo_mock.is_participant.return_value = True  # Is a participant
-    access = ProjectAccess(repo_mock, participant=True)
+    access = ProjectAccess(repo_mock, user_repo_mock, participant=True)
 
     p = access.get(user, project.pid)
 
@@ -73,10 +79,11 @@ def test_get_by_participant_no_access_raises():
     user = make_user(id=2)
     project = make_project(owner)
 
+    user_repo_mock = mock.MagicMock()
     repo_mock = mock.MagicMock()
     repo_mock.get_by_id.return_value = project
     repo_mock.is_participant.return_value = False  # Is not a participant
-    access = ProjectAccess(repo_mock, participant=True)
+    access = ProjectAccess(repo_mock, user_repo_mock, participant=True)
 
     with pytest.raises(AccessError):
         access.get(user, project.pid)
@@ -87,9 +94,10 @@ def test_delete_by_owner():
     user = make_user()
     project = make_project(user)
 
+    user_repo_mock = mock.MagicMock()
     repo_mock = mock.MagicMock()
     repo_mock.get_by_id.return_value = project
-    access = ProjectAccess(repo_mock)
+    access = ProjectAccess(repo_mock, user_repo_mock)
 
     access.delete(user, project.pid)
 
@@ -100,9 +108,10 @@ def test_delete_by_owner():
 def test_delete_nonexistent_project_raises():
     user = make_user()
 
+    user_repo_mock = mock.MagicMock()
     repo_mock = mock.MagicMock()
     repo_mock.get_by_id.return_value = None
-    access = ProjectAccess(repo_mock)
+    access = ProjectAccess(repo_mock, user_repo_mock)
 
     with pytest.raises(ProjectNotFoundError):
         access.delete(user, uuid.uuid4())
@@ -113,10 +122,11 @@ def test_delete_by_participant_raises():
     user = make_user(id=2)
     project = make_project(owner)
 
+    user_repo_mock = mock.MagicMock()
     repo_mock = mock.MagicMock()
     repo_mock.get_by_id.return_value = project
     repo_mock.is_participant.return_value = True
-    access = ProjectAccess(repo_mock)  # participant=False
+    access = ProjectAccess(repo_mock, user_repo_mock)  # participant=False
 
     with pytest.raises(AccessError):
         access.delete(user, project.pid)
@@ -128,9 +138,10 @@ def test_update_by_owner():
     user = make_user(id=1)
     project = make_project(user)
 
+    user_repo_mock = mock.MagicMock()
     repo_mock = mock.MagicMock()
     repo_mock.get_by_id.return_value = project
-    access = ProjectAccess(repo_mock)
+    access = ProjectAccess(repo_mock, user_repo_mock)
 
     values = {"name": "New Name"}
     updated_project = access.update(user, project.pid, values)
@@ -143,9 +154,10 @@ def test_update_by_owner():
 def test_update_nonexistent_project_raises():
     user = make_user(id=1)
 
+    user_repo_mock = mock.MagicMock()
     repo_mock = mock.MagicMock()
     repo_mock.get_by_id.return_value = None
-    access = ProjectAccess(repo_mock)
+    access = ProjectAccess(repo_mock, user_repo_mock)
 
     values = {"name": "New Name"}
 
@@ -158,10 +170,11 @@ def test_update_by_participant():
     user = make_user(id=2)
     project = make_project(owner)
 
+    user_repo_mock = mock.MagicMock()
     repo_mock = mock.MagicMock()
     repo_mock.get_by_id.return_value = project
     repo_mock.is_participant.return_value = True  # A participant
-    access = ProjectAccess(repo_mock, participant=True)
+    access = ProjectAccess(repo_mock, user_repo_mock, participant=True)
 
     values = {"name": "New Name"}
     updated_project = access.update(user, project.pid, values)
@@ -177,10 +190,11 @@ def test_update_by_non_participant_raises():
     user = make_user(id=2)
     project = make_project(owner)
 
+    user_repo_mock = mock.MagicMock()
     repo_mock = mock.MagicMock()
     repo_mock.get_by_id.return_value = project
     repo_mock.is_participant.return_value = False  # Not a participant
-    access = ProjectAccess(repo_mock, participant=True)
+    access = ProjectAccess(repo_mock, user_repo_mock, participant=True)
 
     values = {"name": "New Name"}
 
@@ -189,3 +203,60 @@ def test_update_by_non_participant_raises():
 
     repo_mock.get_by_id.assert_called_once_with(project.pid)
     repo_mock.is_participant.assert_called_once_with(user.uid, project.pid)
+
+
+def test_add_participant_by_owner():
+    owner = make_user(id=1)
+    user = make_user(id=2)
+    project = make_project(owner)
+
+    user_repo_mock = mock.MagicMock()
+    user_repo_mock.get_by_id.return_value = owner
+    user_repo_mock.get_by_username.return_value = user
+    project_repo_mock = mock.MagicMock()
+    project_repo_mock.get_by_id.return_value = project
+    project_repo_mock.is_participant.return_value = False  # Not a participant
+    access = ProjectAccess(project_repo_mock, user_repo_mock)
+
+    access.add_participant(project.pid, owner.uid, user.username)
+
+    project_repo_mock.add_participant.assert_called_once_with(
+        project.pid, user.uid
+    )
+
+
+def test_add_participant_by_participant_raises():
+    owner = make_user(id=1)
+    user1 = make_user(id=2)
+    user2 = make_user(id=3)
+    project = make_project(owner)
+
+    user_repo_mock = mock.MagicMock()
+    user_repo_mock.get_by_id.return_value = user2
+    user_repo_mock.get_by_username.return_value = user1
+    repo_mock = mock.MagicMock()
+    repo_mock.get_by_id.return_value = project
+    repo_mock.get_by_username.return_value = user2
+    repo_mock.is_participant.return_value = True
+    access = ProjectAccess(repo_mock, user_repo_mock)
+
+    with pytest.raises(AccessError):
+        access.add_participant(project.pid, user2.uid, user1.uid)
+
+
+def test_add_participant_already_added_raises():
+    owner = make_user(id=1)
+    user = make_user(id=2)
+    project = make_project(owner)
+
+    user_repo_mock = mock.MagicMock()
+    user_repo_mock.get_by_id.return_value = owner
+    user_repo_mock.get_by_username.return_value = user
+    repo_mock = mock.MagicMock()
+    repo_mock.get_by_id.return_value = project
+    repo_mock.get_by_username.return_value = user
+    repo_mock.is_participant.return_value = True
+    access = ProjectAccess(repo_mock, user_repo_mock)
+
+    with pytest.raises(ParticipantExistsError):
+        access.add_participant(project.pid, owner.uid, user.username)
