@@ -13,6 +13,7 @@ from project_storage.use_cases.delete_project import DeleteProjectUseCase
 from project_storage.use_cases.get_all_projects import GetAllProjectsUseCase
 from project_storage.infra.pg.user_repository import PgUserRepository
 from project_storage.infra.pg.project_repository import PgProjectRepository
+from project_storage.project_access import ProjectAccess
 from project_storage.core.config import settings
 from project_storage.models import User
 
@@ -38,15 +39,15 @@ def get_create_project_uc():
 
 
 def get_get_project_uc():
-    return GetProjectUseCase(get_user_repository(), get_project_repository())
+    return GetProjectUseCase(get_project_access(allow_participant=True))
 
 
 def get_update_project_uc():
-    return UpdateProjectUseCase(get_project_repository())
+    return UpdateProjectUseCase(get_project_access(allow_participant=True))
 
 
 def get_delete_project_uc():
-    return DeleteProjectUseCase(get_project_repository())
+    return DeleteProjectUseCase(get_project_access())
 
 
 def get_get_all_projects_uc():
@@ -72,3 +73,7 @@ def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"}
     )
+
+
+def get_project_access(allow_participant=False):
+    return ProjectAccess(get_project_repository(), allow_participant)

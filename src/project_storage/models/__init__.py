@@ -31,7 +31,7 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(32), unique=True)
     hashed_password: Mapped[str] = mapped_column(String(512))
 
-    projects: Mapped[list[Project]] = relationship()
+    projects: Mapped[list[Project]] = relationship(back_populates="owner")
 
 
 class Project(Base):
@@ -44,7 +44,18 @@ class Project(Base):
     created_at: Mapped[datetime] = mapped_column(default=now)
 
     owner_id: Mapped[int] = mapped_column(ForeignKey(User.id))
+    owner: Mapped[User] = relationship(back_populates="projects")
 
     __table_args__ = (
         UniqueConstraint("name", "owner_id", name="unique_name_owner_id"),
     )
+
+
+class ProjectParticipantAssociation(Base):
+    __tablename__ = "project_participants"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    project_id: Mapped[int] = mapped_column(
+        ForeignKey(Project.id, ondelete="CASCADE"))
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey(User.id, ondelete="CASCADE"))

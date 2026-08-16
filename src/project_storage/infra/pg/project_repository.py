@@ -2,15 +2,15 @@ import uuid
 
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import select, union_all
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload, selectinload
 
 from project_storage.repositories.project_repository import (
     ProjectRepository,
-    ProjectExistsError,
-    ProjectNotFoundError
+    ProjectExistsError
 )
-from project_storage.models import User, Project
+from project_storage.models import User, Project, ProjectParticipantAssociation
 from project_storage.database import connect
 
 
@@ -41,29 +41,23 @@ class PgProjectRepository(ProjectRepository):
             return session.scalar(stmt)
 
     def get_by_id(self, id: uuid.UUID) -> Optional[Project]:
-        stmt = select(Project).where(Project.pid == id)
+        stmt = (
+            select(Project)
+            .where(Project.pid == id)
+            .options(joinedload(Project.owner))
+        )
 
         with connect() as session:
             return session.scalar(stmt)
 
     def update(
         self,
-        user: User,
         project_id: uuid.UUID,
         values: dict
-    ) -> Project:
-        stmt = (
-            select(Project)
-            .where(Project.pid == project_id, Project.owner_id == user.id)
-        )
-
+    ) -> None:
+        stmt = select(Project).where(Project.pid == project_id)
         with connect() as session:
             project = session.scalar(stmt)
-            if project is None:
-                raise ProjectNotFoundError(
-                    f"project with id={project_id} not found for "
-                    f"the user with id={user.uid}"
-                )
 
             for field, value in values.items():
                 setattr(project, field, value)
@@ -72,35 +66,54 @@ class PgProjectRepository(ProjectRepository):
                 session.commit()
             except IntegrityError as e:
                 raise ProjectExistsError(
-                    f"user with id={user.uid} already has a project "
-                    f"named={values.get('name')!r}"
+                    f"user already has a project named={values.get('name')!r}"
                 ) from e
             else:
                 session.refresh(project)
-            return project
 
     def get_all(self, user: User) -> list[Project]:
-        stmt = (
+        stmt_owner = (
             select(Project)
             .where(Project.owner_id == user.id)
+        )
+        stmt_participant = (
+            select(Project)
+            .join(ProjectParticipantAssociation)
+            .join(User)
+            .where(User.uid == user.uid)
+        )
+
+        stmt_union = (
+            union_all(stmt_owner, stmt_participant)
             .order_by(Project.id)
         )
-
-        with connect() as session:
-            return list(session.scalars(stmt))
-
-    def delete(self, user: User, project_id: uuid.UUID) -> None:
-        stmt = (
+        orm_stmt = (
             select(Project)
-            .where(Project.pid == project_id, Project.owner_id == user.id)
+            .from_statement(stmt_union)
+            .options(selectinload(Project.owner))
         )
 
         with connect() as session:
+            return list(session.scalars(orm_stmt))
+
+    def delete(self, project_id: uuid.UUID) -> None:
+        stmt = select(Project).where(Project.pid == project_id)
+        with connect() as session:
             project = session.scalar(stmt)
-            if not project:
-                raise ProjectNotFoundError(
-                    f"project with id={project_id} not found for "
-                    f"the user with id={user.uid}"
-                )
             session.delete(project)
             session.commit()
+
+    def is_participant(
+        self,
+        user_id: uuid.UUID,
+        project_id: uuid.UUID
+    ) -> bool:
+        stmt = (
+            select(Project)
+            .join(ProjectParticipantAssociation)
+            .join(User)
+            .where(User.uid == user_id, Project.pid == project_id)
+        )
+
+        with connect() as session:
+            return session.scalar(stmt) is not None

@@ -26,14 +26,20 @@ class ProjectRepository(Protocol):
 
     def update(
         self,
-        user: User,
         project_id: uuid.UUID,
         values: dict
-    ) -> Optional[Project]:
+    ) -> None:
         ...
 
     def get_all(self, user: User) -> list[Project]:
         ...
 
-    def delete(self, user: User, project_id: uuid.UUID) -> None:
+    def delete(self, project_id: uuid.UUID) -> None:
+        ...
+
+    def is_participant(
+        self,
+        user_id: uuid.UUID,
+        project_id: uuid.UUID
+    ) -> bool:
         ...
