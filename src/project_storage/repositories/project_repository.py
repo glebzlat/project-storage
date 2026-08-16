@@ -54,3 +54,16 @@ class ProjectRepository(Protocol):
         user_id: uuid.UUID
     ) -> None:
         ...
+
+    def get_participants(
+        self,
+        project_id: uuid.UUID
+    ) -> list[User]:
+        ...
+
+    def remove_participant(
+        self,
+        project_id: uuid.UUID,
+        user_id: uuid.UUID
+    ) -> None:
+        ...

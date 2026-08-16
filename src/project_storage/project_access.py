@@ -94,6 +94,46 @@ class ProjectAccess:
 
         self._project_repository.add_participant(project.pid, user.uid)
 
+    def get_participants(
+        self,
+        user: User,
+        project_id: uuid.UUID
+    ) -> list[User]:
+        project = self._project_repository.get_by_id(project_id)
+        if project is None:
+            return None
+        self._check_roles(project, user)
+        return self._project_repository.get_participants(project_id)
+
+    def remove_participant(
+        self,
+        user: User,
+        project_id: uuid.UUID,
+        username: str
+    ) -> None:
+        project = self._project_repository.get_by_id(project_id)
+        if project is None:
+            raise ProjectNotFoundError(
+                f"project with id={project_id} not found"
+            )
+        if project.owner_id != user.id:
+            raise AccessError()
+        target_user = self._user_repository.get_by_username(username)
+        if target_user is None:
+            raise UserNotFoundError(
+                f"user with username={username!r} not found"
+            )
+        if not self._project_repository.is_participant(
+            target_user.uid, project.pid
+        ):
+            raise ProjectNotFoundError(
+                f"user username={username!r} not a participant"
+            )
+        self._project_repository.remove_participant(
+            project.pid,
+            target_user.uid
+        )
+
     def _check_roles(self, project: Project, user: User) -> None:
         if project.owner_id == user.id:
             return

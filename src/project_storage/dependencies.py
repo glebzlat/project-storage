@@ -12,6 +12,8 @@ from project_storage.use_cases.update_project import UpdateProjectUseCase
 from project_storage.use_cases.delete_project import DeleteProjectUseCase
 from project_storage.use_cases.get_all_projects import GetAllProjectsUseCase
 from project_storage.use_cases.add_participant import AddParticipantUseCase
+from project_storage.use_cases.get_all_participants import GetAllParticipantsUseCase
+from project_storage.use_cases.remove_participant import RemoveParticipantUseCase
 from project_storage.infra.pg.user_repository import PgUserRepository
 from project_storage.infra.pg.project_repository import PgProjectRepository
 from project_storage.project_access import ProjectAccess
@@ -57,6 +59,14 @@ def get_get_all_projects_uc():
 
 def get_add_participant_uc():
     return AddParticipantUseCase(get_project_access())
+
+
+def get_get_all_participants_uc():
+    return GetAllParticipantsUseCase(get_project_access(allow_participant=True))
+
+
+def get_remove_participant_uc():
+    return RemoveParticipantUseCase(get_project_access())
 
 
 def get_user_repository():
