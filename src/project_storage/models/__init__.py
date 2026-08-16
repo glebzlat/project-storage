@@ -54,5 +54,7 @@ class ProjectParticipantAssociation(Base):
     __tablename__ = "project_participants"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    project_id: Mapped[int] = mapped_column(ForeignKey(Project.id))
-    user_id: Mapped[int] = mapped_column(ForeignKey(User.id))
+    project_id: Mapped[int] = mapped_column(
+        ForeignKey(Project.id, ondelete="CASCADE"))
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey(User.id, ondelete="CASCADE"))
