@@ -7,6 +7,9 @@ from sqlalchemy.orm import Session
 
 from project_storage.services.user_service import UserService
 from project_storage.services.project_service import ProjectService
+from project_storage.services.participant_service import (
+    ParticipantService
+)
 from project_storage.infrastructure.user_repository import UserRepository
 from project_storage.infrastructure.project_repository import ProjectRepository
 from project_storage.infrastructure.participant_repository import (
@@ -27,6 +30,14 @@ def get_project_service(
     user_repository: Annotated[UserRepository, Depends(get_user_repository)]
 ) -> ProjectService:
     return ProjectService(project_repository, user_repository)
+
+
+def get_participant_service(
+    participant_repository: Annotated[
+        ParticipantRepository, Depends(get_participant_repository)],
+    user_repository: Annotated[UserRepository, Depends(get_user_repository)]
+) -> ParticipantService:
+    return ParticipantService(participant_repository, user_repository)
 
 
 def get_user_repository(
@@ -56,4 +67,7 @@ def get_session(
 UserServiceDependency = Annotated[UserService, Depends(get_user_service)]
 ProjectServiceDependency = Annotated[
     ProjectService, Depends(get_project_service)
+]
+ParticipantServiceDependency = Annotated[
+    ParticipantService, Depends(get_participant_service)
 ]
