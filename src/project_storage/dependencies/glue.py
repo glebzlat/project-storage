@@ -59,7 +59,7 @@ def get_participant_repository(
 
 
 def get_session(
-    session: Annotated[Session, Depends(create_session)]
+    session: Annotated[Session, Depends(create_session, scope="function")]
 ) -> Session:
     return session
 
