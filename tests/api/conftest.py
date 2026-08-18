@@ -18,7 +18,7 @@ from pwdlib import PasswordHash
 
 from project_storage.main import app
 from project_storage.database import _engine, connect
-from project_storage.models import Base, User, Project
+from project_storage.models import Base, User, Project, ProjectParticipantAssociation
 from project_storage.core.config import settings
 
 
@@ -120,6 +120,21 @@ def create_project():
         return p
 
     return _create
+
+
+@pytest.fixture
+def add_participant():
+
+    def _add(project: Project, user: User) -> None:
+        assoc = ProjectParticipantAssociation(
+            project_id=project.id,
+            user_id=user.id
+        )
+        with connect() as session:
+            session.add(assoc)
+            session.commit()
+
+    return _add
 
 
 @pytest.fixture

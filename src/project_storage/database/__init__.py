@@ -26,3 +26,16 @@ def connect() -> Generator[Session, None, None]:
         raise
     finally:
         db.close()
+
+
+def create_session() -> Generator[Session, None, None]:
+    session = SessionFactory()
+    try:
+        yield session
+        session.commit()
+    except Exception as e:
+        _logger.error("Database error: %s", e)
+        session.rollback()
+        raise
+    finally:
+        session.close()

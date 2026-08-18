@@ -3,17 +3,13 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from project_storage.use_cases.register_user import (
-    RegisterUser,
+from project_storage.dependencies.glue import UserServiceDependency
+from project_storage.dependencies.authentication import get_current_user
+from project_storage.services.user_service import (
     UsernameAlreadyTakenError,
     PasswordsDoNotMatchError
 )
-from project_storage.dependencies import (
-    get_register_user_uc,
-    get_authenticate_user_uc,
-    get_current_user
-)
-from project_storage.schemas import Token
+from project_storage.schemas.user import RegisterUser, RegisteredUser, Token
 from project_storage.models import User
 
 
@@ -23,11 +19,14 @@ router = APIRouter()
 @router.post("/register")
 def register_user(
     user: RegisterUser,
-    use_case=Depends(get_register_user_uc)
+    service: UserServiceDependency
 ):
     try:
-        result = use_case.execute(user)
-        return result
+        db_user = service.register(user)
+        return RegisteredUser(
+            id=db_user.uid,
+            username=db_user.username
+        )
     except UsernameAlreadyTakenError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -43,16 +42,16 @@ def register_user(
 @router.post("/token")
 def login_user(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    use_case=Depends(get_authenticate_user_uc)
+    service: UserServiceDependency
 ):
-    user = use_case.authenticate(form_data.username, form_data.password)
+    user = service.authenticate(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"}
         )
-    access_token = use_case.create_token(user)
+    access_token = service.create_token(user)
     return Token(access_token=access_token, token_type="bearer")
 
 

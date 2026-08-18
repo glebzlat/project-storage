@@ -1,8 +1,8 @@
 import uuid
 
-from typing import Protocol, Optional
+from typing import Protocol
 
-from project_storage.models import User, Project
+from project_storage.models import Project
 
 
 class ProjectExistsError(Exception):
@@ -13,19 +13,12 @@ class ProjectNotFoundError(Exception):
     """Project not found"""
 
 
-class ParticipantExistsError(Exception):
-    """Participant is already added to the project"""
-
-
 class ProjectRepository(Protocol):
 
-    def create(self, user: User, project: Project) -> None:
+    def create(self, user_id: uuid.UUID, project: Project) -> Project:
         ...
 
-    def get_owned_by_name(self, user: User, name: str) -> Optional[Project]:
-        ...
-
-    def get_by_id(self, id: uuid.UUID) -> Optional[Project]:
+    def get_by_id(self, project_id: uuid.UUID) -> Project:
         ...
 
     def update(
@@ -35,35 +28,8 @@ class ProjectRepository(Protocol):
     ) -> None:
         ...
 
-    def get_all(self, user: User) -> list[Project]:
+    def get_all(self, user_id: uuid.UUID) -> list[Project]:
         ...
 
     def delete(self, project_id: uuid.UUID) -> None:
-        ...
-
-    def is_participant(
-        self,
-        user_id: uuid.UUID,
-        project_id: uuid.UUID
-    ) -> bool:
-        ...
-
-    def add_participant(
-        self,
-        project_id: uuid.UUID,
-        user_id: uuid.UUID
-    ) -> None:
-        ...
-
-    def get_participants(
-        self,
-        project_id: uuid.UUID
-    ) -> list[User]:
-        ...
-
-    def remove_participant(
-        self,
-        project_id: uuid.UUID,
-        user_id: uuid.UUID
-    ) -> None:
         ...
