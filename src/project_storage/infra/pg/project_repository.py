@@ -117,3 +117,56 @@ class PgProjectRepository(ProjectRepository):
 
         with connect() as session:
             return session.scalar(stmt) is not None
+
+    def add_participant(
+        self,
+        project_id: uuid.UUID,
+        user_id: uuid.UUID
+    ) -> None:
+        stmt_project = select(Project).where(Project.pid == project_id)
+        stmt_user = select(User).where(User.uid == user_id)
+        with connect() as session:
+            project = session.scalars(stmt_project).one()
+            user = session.scalars(stmt_user).one()
+
+            assoc = ProjectParticipantAssociation(
+                project_id=project.id,
+                user_id=user.id
+            )
+
+            session.add(assoc)
+            session.commit()
+
+    def get_participants(
+        self,
+        project_id: uuid.UUID
+    ) -> list[User]:
+        stmt = (
+            select(User)
+            .join(ProjectParticipantAssociation)
+            .join(Project)
+            .where(Project.pid == project_id)
+        )
+        with connect() as session:
+            return list(session.scalars(stmt))
+
+    def remove_participant(
+        self,
+        project_id: uuid.UUID,
+        user_id: uuid.UUID
+    ) -> None:
+        stmt_project = select(Project).where(Project.pid == project_id)
+        stmt_user = select(User).where(User.uid == user_id)
+        with connect() as session:
+            project = session.scalars(stmt_project).one_or_none()
+            user = session.scalars(stmt_user).one_or_none()
+            if project is None or user is None:
+                return
+            assoc_stmt = select(ProjectParticipantAssociation).where(
+                ProjectParticipantAssociation.project_id == project.id,
+                ProjectParticipantAssociation.user_id == user.id
+            )
+            assoc = session.scalar(assoc_stmt)
+            if assoc is not None:
+                session.delete(assoc)
+                session.commit()

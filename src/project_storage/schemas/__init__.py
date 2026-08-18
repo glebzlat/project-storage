@@ -37,3 +37,18 @@ class ExistingProject(BaseModel):
 class ExistingProjectList(BaseModel):
     n: int
     projects: list[ExistingProject]
+
+
+class AddParticipant(BaseModel):
+    username: str
+
+
+class Participant(BaseModel):
+    username: str
+    name: str
+    uid: uuid.UUID
+
+
+class ParticipantList(BaseModel):
+    n: int
+    participants: list[Participant]

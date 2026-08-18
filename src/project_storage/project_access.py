@@ -4,7 +4,12 @@ from typing import Optional
 
 from project_storage.repositories.project_repository import (
     ProjectRepository,
-    ProjectNotFoundError
+    ProjectNotFoundError,
+    ParticipantExistsError
+)
+from project_storage.repositories.user_repository import (
+    UserRepository,
+    UserNotFoundError
 )
 from project_storage.models import User, Project
 
@@ -18,10 +23,12 @@ class ProjectAccess:
     def __init__(
         self,
         project_repository: ProjectRepository,
+        user_repository: UserRepository,
         participant=False
     ) -> None:
         self._participant = participant
         self._project_repository = project_repository
+        self._user_repository = user_repository
 
     def get(self, user: User, id: uuid.UUID) -> Optional[Project]:
         project = self._project_repository.get_by_id(id)
@@ -56,6 +63,76 @@ class ProjectAccess:
         self._check_roles(project, user)
         self._project_repository.update(project.pid, values)
         return project
+
+    def add_participant(
+        self,
+        project_id: uuid.UUID,
+        issuer_id: uuid.UUID,
+        username: str
+    ) -> None:
+        project = self._project_repository.get_by_id(project_id)
+        if project is None:
+            raise ProjectNotFoundError(
+                f"project with id={project_id} not found"
+            )
+
+        issuer = self._user_repository.get_by_id(issuer_id)
+        if issuer is None:
+            raise ValueError()
+        self._check_roles(project, issuer)
+
+        user = self._user_repository.get_by_username(username)
+        if user is None:
+            raise UserNotFoundError(
+                f"user with username={username!r} not found"
+            )
+
+        if self._project_repository.is_participant(user.uid, project.pid):
+            raise ParticipantExistsError(
+                f"user username={username!r} already added to the project"
+            )
+
+        self._project_repository.add_participant(project.pid, user.uid)
+
+    def get_participants(
+        self,
+        user: User,
+        project_id: uuid.UUID
+    ) -> list[User]:
+        project = self._project_repository.get_by_id(project_id)
+        if project is None:
+            return None
+        self._check_roles(project, user)
+        return self._project_repository.get_participants(project_id)
+
+    def remove_participant(
+        self,
+        user: User,
+        project_id: uuid.UUID,
+        username: str
+    ) -> None:
+        project = self._project_repository.get_by_id(project_id)
+        if project is None:
+            raise ProjectNotFoundError(
+                f"project with id={project_id} not found"
+            )
+        if project.owner_id != user.id:
+            raise AccessError()
+        target_user = self._user_repository.get_by_username(username)
+        if target_user is None:
+            raise UserNotFoundError(
+                f"user with username={username!r} not found"
+            )
+        if not self._project_repository.is_participant(
+            target_user.uid, project.pid
+        ):
+            raise ProjectNotFoundError(
+                f"user username={username!r} not a participant"
+            )
+        self._project_repository.remove_participant(
+            project.pid,
+            target_user.uid
+        )
 
     def _check_roles(self, project: Project, user: User) -> None:
         if project.owner_id == user.id:

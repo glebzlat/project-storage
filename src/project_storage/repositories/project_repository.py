@@ -13,6 +13,10 @@ class ProjectNotFoundError(Exception):
     """Project not found"""
 
 
+class ParticipantExistsError(Exception):
+    """Participant is already added to the project"""
+
+
 class ProjectRepository(Protocol):
 
     def create(self, user: User, project: Project) -> None:
@@ -42,4 +46,24 @@ class ProjectRepository(Protocol):
         user_id: uuid.UUID,
         project_id: uuid.UUID
     ) -> bool:
+        ...
+
+    def add_participant(
+        self,
+        project_id: uuid.UUID,
+        user_id: uuid.UUID
+    ) -> None:
+        ...
+
+    def get_participants(
+        self,
+        project_id: uuid.UUID
+    ) -> list[User]:
+        ...
+
+    def remove_participant(
+        self,
+        project_id: uuid.UUID,
+        user_id: uuid.UUID
+    ) -> None:
         ...
