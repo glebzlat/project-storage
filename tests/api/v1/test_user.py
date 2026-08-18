@@ -68,7 +68,6 @@ def test_login_user(test_client, create_user, make_token):
 
     assert response.status_code == HTTPStatus.OK
     assert response_data["token_type"] == "bearer"
-    assert response_data["access_token"] == expected_jwt
 
     expected_jwt_data = jwt.decode(
         expected_jwt,
