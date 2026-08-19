@@ -71,3 +71,14 @@ class FileMetaRepository(Protocol):
         Raises:
             FileNotFoundError: If no file with the given id found.
         """
+
+    def get(self, file_id: uuid.UUID, project_id: uuid.UUID) -> FileMeta:
+        """Retrieve metadata of the file in relation to the project
+
+        Returns:
+            FileMeta instance loaded from the database.
+
+        Raises:
+            FileNotFoundError: If no file with the given id found on the
+                project.
+        """

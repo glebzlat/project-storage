@@ -5,8 +5,12 @@ class FileRepositoryError(Exception):
     """Errors related to FileRepository"""
 
 
-class FileSaveError(Exception):
+class FileSaveError(FileRepositoryError):
     """Error saving file"""
+
+
+class FileDownloadError(FileRepositoryError):
+    """Error downloading file"""
 
 
 class FileRepository(Protocol):
@@ -16,4 +20,11 @@ class FileRepository(Protocol):
 
         Raises:
             FileSaveError: In case of any error related to file saving.
+        """
+
+    def get(self, storage_key: str) -> BinaryIO:
+        """Get the file from a persistent file storage
+
+        Raises:
+            FileDownloadError: In case of download error.
         """

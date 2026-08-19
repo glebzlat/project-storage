@@ -1,14 +1,14 @@
 import uuid
-from typing import Annotated
+from typing import Annotated, Iterable
 
 from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
-    Response,
     UploadFile,
     status,
 )
+from fastapi.responses import StreamingResponse
 
 from project_storage.dependencies.authentication import get_current_user
 from project_storage.dependencies.glue import FileServiceDependency
@@ -19,14 +19,19 @@ from project_storage.dependencies.project_access import (
 from project_storage.models import User
 from project_storage.repositories.file_meta_repository import (
     DocumentExistsError,
+    DocumentNotFoundError
 )
-from project_storage.repositories.file_repository import FileSaveError
+from project_storage.repositories.file_repository import (
+    FileSaveError,
+    FileDownloadError
+)
 from project_storage.services.file_service import (
     FileTypeRequiredError,
     FileTypeNotAllowedError,
     FileNameRequiredError
 )
 from project_storage.schemas.document import CreatedDocument
+from project_storage.core.config import settings
 
 
 router = APIRouter()
@@ -84,3 +89,30 @@ def upload_document(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to upload document"
         )
+
+
+@router.get("/{document_id}")
+def get_document_info(
+    project_id: uuid.UUID,
+    document_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    service: FileServiceDependency,
+    access=Depends(require_access(Action.READ))
+):
+    try:
+        file_meta, stream = service.get(document_id, project_id)
+    except DocumentNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Document {e.file_id} not found"
+        )
+    except FileDownloadError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to load file"
+        )
+
+    return StreamingResponse(
+        media_type=file_meta.content_type,
+        content=stream,
+    )
