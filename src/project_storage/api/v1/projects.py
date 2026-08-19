@@ -22,10 +22,12 @@ from project_storage.repositories.project_repository import (
     ProjectNotFoundError
 )
 from project_storage.api.v1.participants import router as participants_router
+from project_storage.api.v1.documents import router as documents_router
 
 
 router = APIRouter()
 router.include_router(participants_router)
+router.include_router(documents_router, prefix="/{project_id}/documents")
 
 
 @router.post("/create")

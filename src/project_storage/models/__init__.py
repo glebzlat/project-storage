@@ -59,3 +59,18 @@ class ProjectParticipantAssociation(Base):
         ForeignKey(Project.id, ondelete="CASCADE"))
     user_id: Mapped[int] = mapped_column(
         ForeignKey(User.id, ondelete="CASCADE"))
+
+
+class FileMeta(Base):
+    __tablename__ = "file"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    fid: Mapped[uuid.UUID] = mapped_column(UUID())
+    storage_key: Mapped[uuid.UUID] = mapped_column(UUID())
+    project_id: Mapped[int] = mapped_column(
+        ForeignKey(Project.id, ondelete="CASCADE"))
+    uploaded_by_id: Mapped[int] = mapped_column(ForeignKey(User.id))
+    filename: Mapped[str] = mapped_column(String(64))
+    content_type: Mapped[str]
+    size: Mapped[int]
+    created_at: Mapped[datetime] = mapped_column(default=now)
