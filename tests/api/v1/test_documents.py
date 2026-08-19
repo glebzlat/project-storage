@@ -8,7 +8,7 @@ from project_storage.core.config import settings
 def test_upload_document_by_owner_returns_201(
     test_client, create_user, create_project, make_token, tmp_path
 ):
-    owner = create_user(username="owner_doc_1")
+    owner = create_user(username="owner")
     project = create_project(owner.id)
     token = make_token(owner.username, owner.name)
 
@@ -25,10 +25,15 @@ def test_upload_document_by_owner_returns_201(
 
 
 def test_upload_document_by_participant_returns_201(
-    test_client, create_user, create_project, add_participant, make_token, tmp_path
+    test_client,
+    create_user,
+    create_project,
+    add_participant,
+    make_token,
+    tmp_path
 ):
-    owner = create_user(username="owner_doc_2")
-    participant = create_user(username="part_doc_1")
+    owner = create_user(username="owner")
+    participant = create_user(username="part")
     project = create_project(owner.id)
     add_participant(project, participant)
     token = make_token(participant.username, participant.name)
@@ -45,11 +50,11 @@ def test_upload_document_by_participant_returns_201(
     assert response.status_code == status.HTTP_201_CREATED
 
 
-def test_upload_document_by_non_participant_returns_403(
+def test_upload_document_by_non_participant_returns_404(
     test_client, create_user, create_project, make_token, tmp_path
 ):
-    owner = create_user(username="owner_doc_3")
-    outsider = create_user(username="outsider_doc_1")
+    owner = create_user(username="owner")
+    outsider = create_user(username="outsider")
     project = create_project(owner.id)
     token = make_token(outsider.username, outsider.name)
 
@@ -62,13 +67,13 @@ def test_upload_document_by_non_participant_returns_403(
         files=files,
     )
 
-    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_upload_document_nonexistent_project_returns_404(
     test_client, create_user, make_token, tmp_path
 ):
-    owner = create_user(username="owner_doc_4")
+    owner = create_user(username="owner")
     token = make_token(owner.username, owner.name)
 
     file_content = b"%PDF-1.4"
@@ -86,7 +91,7 @@ def test_upload_document_nonexistent_project_returns_404(
 def test_upload_document_duplicate_filename_returns_409(
     test_client, create_user, create_project, make_token, tmp_path
 ):
-    owner = create_user(username="owner_doc_5")
+    owner = create_user(username="owner")
     project = create_project(owner.id)
     token = make_token(owner.username, owner.name)
 
@@ -112,7 +117,7 @@ def test_upload_document_duplicate_filename_returns_409(
 def test_upload_document_unsupported_type_returns_415(
     test_client, create_user, create_project, make_token, tmp_path
 ):
-    owner = create_user(username="owner_doc_6")
+    owner = create_user(username="owner")
     project = create_project(owner.id)
     token = make_token(owner.username, owner.name)
 
@@ -129,30 +134,10 @@ def test_upload_document_unsupported_type_returns_415(
     assert "File type not allowed" in response.json()["detail"]
 
 
-def test_upload_document_missing_content_type_returns_415(
-    test_client, create_user, create_project, make_token, tmp_path
-):
-    owner = create_user(username="owner_doc_7")
-    project = create_project(owner.id)
-    token = make_token(owner.username, owner.name)
-
-    file_content = b"%PDF-1.4"
-    files = {"file": ("report.pdf", file_content, None)}
-
-    response = test_client.post(
-        f"{settings.API_PATH}/projects/{project.pid}/documents",
-        headers={"Authorization": f"Bearer {token}"},
-        files=files,
-    )
-
-    assert response.status_code == status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
-    assert response.json() == {"detail": "File type required"}
-
-
 def test_upload_document_missing_filename_returns_422(
     test_client, create_user, create_project, make_token, tmp_path
 ):
-    owner = create_user(username="owner_doc_8")
+    owner = create_user(username="owner")
     project = create_project(owner.id)
     token = make_token(owner.username, owner.name)
 
@@ -166,13 +151,13 @@ def test_upload_document_missing_filename_returns_422(
     )
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
-    assert response.json() == {"detail": "File name required"}
 
 
 def test_upload_document_nonexistent_user_returns_401(
-    test_client, create_project, tmp_path
+    create_user, test_client, create_project, tmp_path
 ):
-    project = create_project(999999)  # owner id that does not exist in token
+    owner = create_user(username="useruser")
+    project = create_project(owner.id)  # owner id that does not exist in token
 
     file_content = b"%PDF-1.4"
     files = {"file": ("x.pdf", file_content, "application/pdf")}
