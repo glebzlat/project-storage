@@ -1,8 +1,11 @@
 import uuid
 
 from fastapi import status
+from sqlalchemy import select
 
 from project_storage.core.config import settings
+from project_storage.database import connect
+from project_storage.models import FileMeta
 
 
 def test_upload_document_by_owner_returns_201(
@@ -12,8 +15,9 @@ def test_upload_document_by_owner_returns_201(
     project = create_project(owner.id)
     token = make_token(owner.username, owner.name)
 
+    file_name = "report.pdf"
     file_content = b"%PDF-1.4 test pdf content"
-    files = {"file": ("report.pdf", file_content, "application/pdf")}
+    files = {"file": (file_name, file_content, "application/pdf")}
 
     response = test_client.post(
         f"{settings.API_PATH}/projects/{project.pid}/documents",
@@ -22,6 +26,18 @@ def test_upload_document_by_owner_returns_201(
     )
 
     assert response.status_code == status.HTTP_201_CREATED
+
+    stmt = select(FileMeta).where(FileMeta.filename == file_name)
+    with connect() as session:
+        file_meta = session.scalar(stmt)
+
+    data = response.json()
+    assert data == {
+        "project_id": str(project.pid),
+        "file_id": str(file_meta.fid),
+        "file_name": file_name,
+        "file_size": len(file_content)
+    }
 
 
 def test_upload_document_by_participant_returns_201(

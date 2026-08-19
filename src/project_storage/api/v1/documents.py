@@ -26,12 +26,17 @@ from project_storage.services.file_service import (
     FileTypeNotAllowedError,
     FileNameRequiredError
 )
+from project_storage.schemas.document import CreatedDocument
 
 
 router = APIRouter()
 
 
-@router.post("")
+@router.post(
+    "",
+    response_model=CreatedDocument,
+    status_code=status.HTTP_201_CREATED
+)
 def upload_document(
     project_id: uuid.UUID,
     file: UploadFile,
@@ -40,14 +45,20 @@ def upload_document(
     access=Depends(require_access(Action.UPLOAD))
 ):
     try:
-        service.save(
+        file_meta = service.save(
             content=file.file,
             filename=file.filename,
             filetype=file.content_type,
             project_id=project_id,
             user_id=current_user.uid,
         )
-        return Response(status_code=status.HTTP_201_CREATED)
+        response = CreatedDocument(
+            project_id=project_id,
+            file_id=file_meta.fid,
+            file_name=file_meta.filename,
+            file_size=file_meta.size
+        )
+        return response
     except FileTypeRequiredError:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,

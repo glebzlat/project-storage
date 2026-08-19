@@ -122,7 +122,7 @@ class FileService:
     def _get_file_size(self, stream: BinaryIO) -> int:
         chunk_size = settings.UPLOAD_FILE_CHUNK_SIZE_B
         total_size = 0
-        while stream.read(chunk_size):
-            total_size += chunk_size
+        while chunk := stream.read(chunk_size):
+            total_size += len(chunk)
         stream.seek(0)
         return total_size
