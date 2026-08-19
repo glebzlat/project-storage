@@ -1,9 +1,13 @@
 from fastapi import FastAPI
 
-from .api.v1.router import router
+from project_storage.api.v1.router import router
 from project_storage.api.v1.users import router as users_router
 from project_storage.api.v1.projects import router as projects_router
-from .core.config import settings
+from project_storage.core.config import settings
+from project_storage.core.logging import setup_logging
+
+
+setup_logging()
 
 
 app = FastAPI(

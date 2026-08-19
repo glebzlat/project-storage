@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,6 +12,7 @@ class Settings(BaseSettings):
 
     APP_NAME: str = "ProjectStorage"
     API_PATH: str = "/api"
+    LOG_LEVEL: Literal["debug", "info", "warning", "error", "crit"] = "warning"
 
     DB_URL: str
 
