@@ -1,6 +1,7 @@
 import uuid
 import pytest
 import jwt
+import boto3
 
 from pathlib import Path
 from typing import Optional
@@ -15,6 +16,8 @@ from sqlalchemy import text
 from fastapi.testclient import TestClient
 
 from pwdlib import PasswordHash
+
+from botocore.exceptions import ClientError
 
 from project_storage.main import app
 from project_storage.database import _engine, connect
@@ -164,3 +167,25 @@ def make_token():
         )
 
     return _make
+
+
+@pytest.fixture
+def s3_file_exists():
+
+    def _exists(key):
+        s3 = boto3.client(
+            "s3",
+            endpoint_url=settings.AWS_ENDPOINT_URL,
+            region_name=settings.AWS_S3_REGION_NAME,
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
+        )
+        try:
+            s3.head_object(Bucket=settings.AWS_S3_BUCKET_NAME, Key=key)
+            return True
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "404":
+                return False
+            raise
+
+    return _exists

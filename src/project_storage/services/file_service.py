@@ -131,6 +131,11 @@ class FileService:
         stream = self._file_repository.get(str(file_meta.storage_key))
         return (file_meta, stream)
 
+    def delete(self, file_id: uuid.UUID, project_id: uuid.UUID) -> None:
+        file_meta = self._file_meta_repository.get(file_id, project_id)
+        self._file_repository.delete(str(file_meta.storage_key))
+        self._file_meta_repository.delete(file_meta)
+
     def _get_file_size(self, stream: BinaryIO) -> int:
         chunk_size = settings.UPLOAD_FILE_CHUNK_SIZE_B
         total_size = 0

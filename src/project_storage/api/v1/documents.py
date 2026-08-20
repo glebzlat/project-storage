@@ -7,6 +7,7 @@ from fastapi import (
     HTTPException,
     UploadFile,
     status,
+    Response
 )
 from fastapi.responses import StreamingResponse
 
@@ -23,7 +24,8 @@ from project_storage.repositories.file_meta_repository import (
 )
 from project_storage.repositories.file_repository import (
     FileSaveError,
-    FileDownloadError
+    FileDownloadError,
+    FileDeletionError
 )
 from project_storage.services.file_service import (
     FileTypeRequiredError,
@@ -121,3 +123,26 @@ def get_document(
         media_type=file_meta.content_type,
         content=stream,
     )
+
+
+@router.delete("/{document_id}")
+def remove_document(
+    project_id: uuid.UUID,
+    document_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    service: FileServiceDependency,
+    access=Depends(require_access(Action.DELETE))
+):
+    try:
+        service.delete(document_id, project_id)
+    except DocumentNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Document {e.file_id} not found"
+        )
+    except FileDeletionError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete file"
+        )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

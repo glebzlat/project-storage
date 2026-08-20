@@ -82,3 +82,6 @@ class FileMetaRepository(Protocol):
             FileNotFoundError: If no file with the given id found on the
                 project.
         """
+
+    def delete(self, file_meta: FileMeta) -> None:
+        """Delete file metadata"""

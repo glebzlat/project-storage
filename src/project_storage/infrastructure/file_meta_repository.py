@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -86,3 +86,7 @@ class FileMetaRepository(FileMetaRepositoryProtocol):
                 project_id=project_id
             )
         return file_meta
+
+    def delete(self, file_meta: FileMeta) -> None:
+        stmt = delete(FileMeta).where(FileMeta.id == file_meta.id)
+        self._session.execute(stmt)
