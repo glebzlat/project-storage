@@ -18,7 +18,7 @@ class Settings(BaseSettings):
 
     JWT_EXPIRATION_TIME_MINUTES: int = 60
     JWT_ALGORITHM: str = "HS256"
-    JWT_SECRET_KEY: str = "not-a-production-secret-at-least-32-bytes-long"
+    JWT_SECRET_KEY: str
 
     UPLOAD_FILE_MAX_SIZE_B: int = 1024 ** 2 * 100  # 100 MB
     UPLOAD_FILE_CHUNK_SIZE_B: int = 1024
