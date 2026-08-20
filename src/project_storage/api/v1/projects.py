@@ -45,8 +45,7 @@ router.include_router(documents_router, prefix="/{project_id}/documents")
         status.HTTP_409_CONFLICT: {
             "model": ErrorModel,
             "description": "Project exists"}
-    },
-    response_model_exclude_unset=True
+    }
 )
 def create_project(
     create_project: CreateProject,
@@ -88,8 +87,7 @@ def create_project(
             "model": ErrorModel,
             "description": "Project not found"
         }
-    },
-    response_model_exclude_unset=True
+    }
 )
 def get_project(
     project_id: uuid.UUID,
@@ -128,8 +126,7 @@ def get_project(
             "model": ErrorModel,
             "description": "Project not found"
         }
-    },
-    response_model_exclude_unset=True
+    }
 )
 def update_project(
     project_id: uuid.UUID,
@@ -173,8 +170,7 @@ def update_project(
             "model": ErrorModel,
             "description": "Error while deleting"
         }
-    },
-    response_model_exclude_unset=True
+    }
 )
 def delete_project(
     project_id: uuid.UUID,

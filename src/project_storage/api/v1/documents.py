@@ -200,8 +200,7 @@ def get_document(
             "model": ErrorModel,
             "description": "Failed to delete file"
         }
-    },
-    response_model_exclude_unset=True
+    }
 )
 def remove_document(
     project_id: uuid.UUID,

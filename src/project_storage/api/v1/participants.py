@@ -39,8 +39,7 @@ router = APIRouter()
             "model": ErrorModel,
             "description": "Participant already added"
         }
-    },
-    response_model_exclude_unset=True
+    }
 )
 def invite_participant(
     project_id: uuid.UUID,
@@ -87,8 +86,7 @@ def invite_participant(
             "model": ErrorModel,
             "description": "Project not found"
         }
-    },
-    response_model_exclude_unset=True
+    }
 )
 def get_participants(
     project_id: uuid.UUID,
@@ -122,8 +120,7 @@ def get_participants(
             "model": ErrorModel,
             "description": "Project, user or participant not found"
         }
-    },
-    response_model_exclude_unset=True
+    }
 )
 def remove_participant(
     project_id: uuid.UUID,
