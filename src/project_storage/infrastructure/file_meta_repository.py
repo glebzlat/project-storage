@@ -5,11 +5,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from project_storage.repositories.file_meta_repository import (
-    FileMetaRepository as FileMetaRepositoryProtocol,
+    FileMetaRepository as FileMetaRepositoryProtocol
+)
+from project_storage.models import Project, User, FileMeta
+from project_storage.exceptions.document import (
     DocumentExistsError,
     DocumentNotFoundError,
 )
-from project_storage.models import Project, User, FileMeta
 
 
 class FileMetaRepository(FileMetaRepositoryProtocol):

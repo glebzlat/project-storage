@@ -2,13 +2,11 @@ import uuid
 
 from typing import Optional
 
-from project_storage.repositories.project_repository import (
-    ProjectRepository,
-    ProjectNotFoundError
-)
+from project_storage.repositories.project_repository import ProjectRepository
 from project_storage.repositories.user_repository import UserRepository
 from project_storage.models import Project
 from project_storage.schemas.project import UpdateProject
+from project_storage.exceptions.project import ProjectNotFoundError
 
 
 class ProjectService:

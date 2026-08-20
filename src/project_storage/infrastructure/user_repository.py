@@ -6,10 +6,9 @@ from sqlalchemy.orm import Session
 
 from project_storage.models import User
 from project_storage.repositories.user_repository import (
-    UserRepository as UserRepositoryProtocol,
-    UserExistsError,
-    UserNotFoundError
+    UserRepository as UserRepositoryProtocol
 )
+from project_storage.exceptions.user import UserExistsError, UserNotFoundError
 
 
 class UserRepository(UserRepositoryProtocol):
@@ -21,14 +20,14 @@ class UserRepository(UserRepositoryProtocol):
         stmt = select(User).where(User.uid == id)
         user = self._session.scalar(stmt)
         if user is None:
-            raise UserNotFoundError()
+            raise UserNotFoundError(user_id=id)
         return user
 
     def get_by_username(self, username: str) -> User:
         stmt = select(User).where(User.username == username)
         user = self._session.scalar(stmt)
         if user is None:
-            raise UserNotFoundError()
+            raise UserNotFoundError(username=username)
         return user
 
     def add(self, user: User) -> None:
@@ -38,6 +37,4 @@ class UserRepository(UserRepositoryProtocol):
             self._session.refresh(user)
         except IntegrityError:
             self._session.rollback()
-            raise UserExistsError(
-                f"user with username={user.username} already exists"
-            )
+            raise UserExistsError(user_id=user.uid, username=user.username)

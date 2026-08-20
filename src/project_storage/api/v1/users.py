@@ -5,12 +5,12 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from project_storage.dependencies.glue import UserServiceDependency
 from project_storage.dependencies.authentication import get_current_user
-from project_storage.services.user_service import (
-    UsernameAlreadyTakenError,
-    PasswordsDoNotMatchError
-)
 from project_storage.schemas.user import RegisterUser, RegisteredUser, Token
 from project_storage.models import User
+from project_storage.exceptions.user import (
+    UserExistsError,
+    UserPasswordError
+)
 
 
 router = APIRouter()
@@ -27,12 +27,12 @@ def register_user(
             id=db_user.uid,
             username=db_user.username
         )
-    except UsernameAlreadyTakenError:
+    except UserExistsError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Username already taken"
         )
-    except PasswordsDoNotMatchError:
+    except UserPasswordError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Provided passwords don't match"

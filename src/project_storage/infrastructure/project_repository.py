@@ -5,11 +5,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload, selectinload, Session
 
 from project_storage.repositories.project_repository import (
-    ProjectRepository as ProjectRepositoryProtocol,
+    ProjectRepository as ProjectRepositoryProtocol
+)
+from project_storage.models import User, Project, ProjectParticipantAssociation
+from project_storage.exceptions.project import (
     ProjectExistsError,
     ProjectNotFoundError
 )
-from project_storage.models import User, Project, ProjectParticipantAssociation
 
 
 class ProjectRepository(ProjectRepositoryProtocol):
@@ -23,10 +25,7 @@ class ProjectRepository(ProjectRepositoryProtocol):
             self._session.flush()
         except IntegrityError as e:
             self._session.rollback()
-            raise ProjectExistsError(
-                f"user with id={user_id} already has a project "
-                f"named={project.name!r}"
-            ) from e
+            raise ProjectExistsError(project_name=project.name) from e
         self._session.refresh(project)
         return project
 
@@ -57,7 +56,8 @@ class ProjectRepository(ProjectRepositoryProtocol):
         except IntegrityError as e:
             self._session.rollback()
             raise ProjectExistsError(
-                f"user already has a project named={values.get('name')!r}"
+                project_name=values.get("name"),
+                project_id=project_id
             ) from e
         self._session.refresh(project)
 
@@ -89,5 +89,5 @@ class ProjectRepository(ProjectRepositoryProtocol):
         stmt = select(Project).where(Project.pid == project_id)
         project = self._session.scalar(stmt)
         if project is None:
-            raise ProjectNotFoundError(f"project {project_id} not found")
+            raise ProjectNotFoundError(project_id=project_id)
         self._session.delete(project)

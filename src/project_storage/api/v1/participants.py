@@ -16,14 +16,12 @@ from project_storage.schemas.participant import (
     Participant,
     ParticipantList
 )
-from project_storage.repositories.user_repository import UserNotFoundError
-from project_storage.repositories.participant_repository import (
+from project_storage.exceptions.user import UserNotFoundError
+from project_storage.exceptions.participant import (
     ParticipantExistsError,
     ParticipantNotFoundError
 )
-from project_storage.repositories.project_repository import (
-    ProjectNotFoundError
-)
+from project_storage.exceptions.project import ProjectNotFoundError
 
 router = APIRouter()
 

@@ -18,24 +18,20 @@ from project_storage.dependencies.project_access import (
     require_access,
 )
 from project_storage.models import User
-from project_storage.repositories.file_meta_repository import (
-    DocumentExistsError,
-    DocumentNotFoundError
-)
-from project_storage.repositories.file_repository import (
-    FileSaveError,
-    FileDownloadError,
-    FileDeletionError
-)
-from project_storage.services.file_service import (
-    FileTypeRequiredError,
-    FileTypeNotAllowedError,
-    FileNameRequiredError,
-    FileSizeError
-)
 from project_storage.schemas.document import (
     CreatedDocument,
     CreatedDocumentList
+)
+from project_storage.exceptions.document import (
+    DocumentTypeRequiredError,
+    DocumentTypeNotAllowedError,
+    DocumentNameRequiredError,
+    DocumentSizeError,
+    DocumentExistsError,
+    DocumentNotFoundError,
+    DocumentSaveError,
+    DocumentDownloadError,
+    DocumentDeleteError
 )
 
 
@@ -69,27 +65,27 @@ def upload_document(
             file_size=file_meta.size
         )
         return response
-    except FileTypeRequiredError:
+    except DocumentTypeRequiredError:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="File type required"
+            detail="Document type required"
         )
-    except FileTypeNotAllowedError as e:
+    except DocumentTypeNotAllowedError as e:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail=f"File type not allowed: {e.filetype}"
+            detail=f"Document type not allowed: {e.filetype}"
         )
-    except FileNameRequiredError:
+    except DocumentNameRequiredError:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="File name required"
+            detail="Document name required"
         )
     except DocumentExistsError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Document with this filename already exists"
         )
-    except FileSaveError:
+    except DocumentSaveError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to upload document"
@@ -111,12 +107,12 @@ def get_document(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Document {e.file_id} not found"
         )
-    except FileDownloadError:
+    except DocumentDownloadError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to load file"
         )
-    except FileSizeError as e:
+    except DocumentSizeError as e:
         raise HTTPException(
             status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail=f"File size exceeds server limits: {e.size}"
@@ -143,7 +139,7 @@ def remove_document(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Document {e.file_id} not found"
         )
-    except FileDeletionError:
+    except DocumentDeleteError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete file"

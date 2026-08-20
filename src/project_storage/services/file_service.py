@@ -5,12 +5,18 @@ from typing import BinaryIO, Optional
 
 from project_storage.models import FileMeta
 from project_storage.repositories.file_meta_repository import (
-    FileMetaRepository,
-    DocumentExistsError,
-    DocumentNotFoundError,
+    FileMetaRepository
 )
 from project_storage.repositories.file_repository import FileRepository
 from project_storage.core.config import settings
+from project_storage.exceptions.document import (
+    DocumentExistsError,
+    DocumentNotFoundError,
+    DocumentNameRequiredError,
+    DocumentSizeError,
+    DocumentTypeNotAllowedError,
+    DocumentTypeRequiredError
+)
 
 
 _logger = logging.getLogger("file_service")
@@ -20,34 +26,6 @@ ALLOWED_FILE_TYPES = [
     "application/pdf",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 ]
-
-
-class FileServiceError(Exception):
-    """Errors related to FileService"""
-
-
-class FileTypeRequiredError(FileServiceError):
-    """No file type received"""
-
-
-class FileTypeNotAllowedError(FileServiceError):
-    """Received file of non-allowed type"""
-
-    def __init__(self, message: str, filetype: str) -> None:
-        super().__init__(message)
-        self.filetype = filetype
-
-
-class FileNameRequiredError(FileServiceError):
-    """No file name received"""
-
-
-class FileSizeError(FileServiceError):
-    """File size error"""
-
-    def __init__(self, message: str, size: int) -> None:
-        super().__init__(message)
-        self.size = size
 
 
 class FileService:
@@ -74,16 +52,16 @@ class FileService:
         )
 
         if filetype is None:
-            raise FileTypeRequiredError("No filetype received")
+            raise DocumentTypeRequiredError("No filetype received")
         if filetype not in ALLOWED_FILE_TYPES:
-            raise FileTypeNotAllowedError("Filetype not allowed", filetype)
+            raise DocumentTypeNotAllowedError("Filetype not allowed", filetype)
         if filename is None:
-            raise FileNameRequiredError("No filename received")
+            raise DocumentNameRequiredError("No filename received")
 
         max_file_size = settings.UPLOAD_FILE_MAX_SIZE_B
         file_size = self._get_file_size(content)
         if file_size > max_file_size:
-            raise FileSizeError(
+            raise DocumentSizeError(
                 "filesize exceeds maximum limit",
                 size=file_size
             )

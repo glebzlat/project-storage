@@ -20,13 +20,13 @@ from project_storage.schemas.project import (
     ExistingProjectList
 )
 from project_storage.models import User
-from project_storage.repositories.project_repository import (
+from project_storage.api.v1.participants import router as participants_router
+from project_storage.api.v1.documents import router as documents_router
+from project_storage.exceptions.document import DocumentDeleteError
+from project_storage.exceptions.project import (
     ProjectExistsError,
     ProjectNotFoundError
 )
-from project_storage.repositories.file_repository import FileDeletionError
-from project_storage.api.v1.participants import router as participants_router
-from project_storage.api.v1.documents import router as documents_router
 
 
 router = APIRouter()
@@ -124,7 +124,7 @@ def delete_project(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Project not found"
         )
-    except FileDeletionError:
+    except DocumentDeleteError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error while deleting project documents"

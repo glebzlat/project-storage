@@ -1,32 +1,8 @@
 import uuid
 
-from typing import Protocol, Optional
+from typing import Protocol
 
 from project_storage.models import FileMeta
-
-
-class FileMetaError(Exception):
-    """Errors related to FileMetaRepository"""
-
-    def __init__(
-        self,
-        message: str,
-        filename: Optional[str] = None,
-        project_id: Optional[uuid.UUID] = None,
-        file_id: Optional[uuid.UUID] = None
-    ) -> None:
-        super().__init__(message)
-        self.filename = filename
-        self.project_id = project_id
-        self.file_id = file_id
-
-
-class DocumentExistsError(FileMetaError):
-    """File with the given filename already exists"""
-
-
-class DocumentNotFoundError(FileMetaError):
-    """File not found"""
 
 
 class FileMetaRepository(Protocol):
@@ -43,7 +19,7 @@ class FileMetaRepository(Protocol):
             FileMeta instance loaded from the database.
 
         Raises:
-            FileExistsError: If file with the given filename already exists
+            DocumentExistsError: If file with the given filename already exists
                 on the project.
         """
 
@@ -58,7 +34,7 @@ class FileMetaRepository(Protocol):
             FileMeta instance loaded from the database.
 
         Raises:
-            FileNotFoundError: If no file with the given filename found on
+            DocumentNotFoundError: If no file with the given filename found on
                 the project.
         """
 
@@ -69,7 +45,7 @@ class FileMetaRepository(Protocol):
             FileMeta instance loaded from the database.
 
         Raises:
-            FileNotFoundError: If no file with the given id found.
+            DocumentNotFoundError: If no file with the given id found.
         """
 
     def get(self, file_id: uuid.UUID, project_id: uuid.UUID) -> FileMeta:
@@ -79,7 +55,7 @@ class FileMetaRepository(Protocol):
             FileMeta instance loaded from the database.
 
         Raises:
-            FileNotFoundError: If no file with the given id found on the
+            DocumentNotFoundError: If no file with the given id found on the
                 project.
         """
 
