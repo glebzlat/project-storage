@@ -59,9 +59,12 @@ router = APIRouter()
         status.HTTP_500_INTERNAL_SERVER_ERROR: {
             "model": ErrorModel,
             "description": "Failed to upload document"
+        },
+        status.HTTP_413_CONTENT_TOO_LARGE: {
+            "model": ErrorModel,
+            "description": "File size exceeds server limits"
         }
-    },
-    response_model_exclude_unset=True
+    }
 )
 def upload_document(
     project_id: uuid.UUID,
@@ -127,6 +130,16 @@ def upload_document(
                 description="Failed to upload document"
             )
         )
+    except DocumentSizeError as e:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail=ErrorModel.asjson(
+                project_id=project_id,
+                document_id=e.filename,
+                document_size=e.size,
+                description="File size exceeds server limits"
+            )
+        )
 
 
 @router.get(
@@ -139,13 +152,8 @@ def upload_document(
         status.HTTP_500_INTERNAL_SERVER_ERROR: {
             "model": ErrorModel,
             "description": "Failed to load file"
-        },
-        status.HTTP_413_CONTENT_TOO_LARGE: {
-            "model": ErrorModel,
-            "description": "File size exceeds server limits"
         }
-    },
-    response_model_exclude_unset=True
+    }
 )
 def get_document(
     project_id: uuid.UUID,
@@ -172,16 +180,6 @@ def get_document(
                 project_id=project_id,
                 document_id=document_id,
                 description="Failed to load file"
-            )
-        )
-    except DocumentSizeError as e:
-        raise HTTPException(
-            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
-            detail=ErrorModel.asjson(
-                project_id=project_id,
-                document_id=document_id,
-                document_size=e.size,
-                description="File size exceeds server limits"
             )
         )
 
