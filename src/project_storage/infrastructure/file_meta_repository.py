@@ -86,3 +86,13 @@ class FileMetaRepository(FileMetaRepositoryProtocol):
                 project_id=project_id
             )
         return file_meta
+
+    def list(self, project_id: uuid.UUID) -> list[FileMeta]:
+        stmt_project = select(Project).where(Project.pid == project_id)
+        project = self._session.scalars(stmt_project).one()
+
+        stmt_file_meta = (
+            select(FileMeta)
+            .where(FileMeta.project_id == project.id)
+        )
+        return list(self._session.scalars(stmt_file_meta))

@@ -131,6 +131,9 @@ class FileService:
         stream = self._file_repository.get(str(file_meta.storage_key))
         return (file_meta, stream)
 
+    def list(self, project_id: uuid.UUID) -> list[FileMeta]:
+        return self._file_meta_repository.list(project_id)
+
     def _get_file_size(self, stream: BinaryIO) -> int:
         chunk_size = settings.UPLOAD_FILE_CHUNK_SIZE_B
         total_size = 0
