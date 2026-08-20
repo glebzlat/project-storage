@@ -1,5 +1,5 @@
 import uuid
-from typing import Annotated, Iterable
+from typing import Annotated
 
 from fastapi import (
     APIRouter,
@@ -28,10 +28,10 @@ from project_storage.repositories.file_repository import (
 from project_storage.services.file_service import (
     FileTypeRequiredError,
     FileTypeNotAllowedError,
-    FileNameRequiredError
+    FileNameRequiredError,
+    FileSizeError
 )
 from project_storage.schemas.document import CreatedDocument
-from project_storage.core.config import settings
 
 
 router = APIRouter()
@@ -92,7 +92,7 @@ def upload_document(
 
 
 @router.get("/{document_id}")
-def get_document_info(
+def get_document(
     project_id: uuid.UUID,
     document_id: uuid.UUID,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -110,6 +110,11 @@ def get_document_info(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to load file"
+        )
+    except FileSizeError as e:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail=f"File size exceeds server limits: {e.size}"
         )
 
     return StreamingResponse(
