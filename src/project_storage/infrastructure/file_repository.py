@@ -6,7 +6,8 @@ from botocore.exceptions import ClientError
 from project_storage.repositories.file_repository import (
     FileRepository as FileRepositoryProtocol,
     FileSaveError,
-    FileDownloadError
+    FileDownloadError,
+    FileDeletionError
 )
 
 
@@ -32,3 +33,9 @@ class FileRepository(FileRepositoryProtocol):
             raise FileDownloadError()
         stream.seek(0)
         return stream
+
+    def delete(self, storage_key: str) -> None:
+        try:
+            self._client.delete_object(storage_key)
+        except ClientError:
+            raise FileDeletionError()

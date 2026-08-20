@@ -13,6 +13,10 @@ class FileDownloadError(FileRepositoryError):
     """Error downloading file"""
 
 
+class FileDeletionError(FileRepositoryError):
+    """Error deleting file"""
+
+
 class FileRepository(Protocol):
 
     def save(self, content: BinaryIO, storage_key: str) -> None:
@@ -27,4 +31,11 @@ class FileRepository(Protocol):
 
         Raises:
             FileDownloadError: In case of download error.
+        """
+
+    def delete(self, storage_key: str) -> None:
+        """Delete the file
+
+        Raises:
+            FileDeletionError: In case of deletion error.
         """
