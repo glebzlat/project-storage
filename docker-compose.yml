@@ -11,6 +11,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      ministack:
+        condition: service_healthy
     volumes:
       - ./alembic:/home/runner/app/alembic:z
 
@@ -24,6 +26,8 @@ services:
     env_file: ".env"
     depends_on:
       db:
+        condition: service_healthy
+      ministack:
         condition: service_healthy
     develop:
       watch:
@@ -45,6 +49,28 @@ services:
       - 5432:5432
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+      start_interval: 0.5s
+
+  ministack:
+    profiles: ["prod", "dev"]
+    image: ministackorg/ministack:1.4.19
+    restart: unless-stopped
+    env_file: ".env"
+    environment:
+      PERSIST_STATE: 1
+      S3_PERSIST: 1
+      SERVICES: s3
+    ports:
+      - 4566:4566
+    volumes:
+      - ministack_data:/tmp/ministack-data
+      - ministack_state:/tmp/ministack-state
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:4566/_ministack/health')\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -76,6 +102,23 @@ services:
           size: 200000000
           mode: 1777
 
+  ministack-test:
+    profiles: ["test"]
+    image: ministackorg/ministack:1.4.19
+    restart: unless-stopped
+    env_file: ".env"
+    environment:
+      SERVICES: s3
+    ports:
+      - 4566:4566
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:4566/_ministack/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+      start_interval: 0.5s
+
   app-test:
     profiles: ["test"]
     build:
@@ -87,10 +130,19 @@ services:
     command: ["poe", "integ_test"]
     environment:
       DB_URL: postgresql://app:password@db-test:5432/project_storage_test
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_ENDPOINT_URL: http://ministack-test:4566
     depends_on:
       db-test:
+        condition: service_healthy
+      ministack-test:
         condition: service_healthy
     volumes:
       - ./tests:/home/runner/app/tests:z
       - ./alembic:/home/runner/app/alembic:z
       - ./alembic.ini:/home/runner/app/alembic.ini:z
+
+volumes:
+  ministack_data:
+  ministack_state:

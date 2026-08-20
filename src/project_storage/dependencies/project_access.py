@@ -42,11 +42,13 @@ PROJECT_PERMISSIONS: dict[Role, set[Action]] = {
         Action.READ,
         Action.UPDATE,
         Action.DELETE,
-        Action.INVITE
+        Action.INVITE,
+        Action.UPLOAD
     },
     Role.PARTICIPANT: {
         Action.READ,
-        Action.UPDATE
+        Action.UPDATE,
+        Action.UPLOAD
     },
 }
 
