@@ -131,7 +131,7 @@ def remove_document(
     document_id: uuid.UUID,
     current_user: Annotated[User, Depends(get_current_user)],
     service: FileServiceDependency,
-    access=Depends(require_access(Action.DELETE))
+    access=Depends(require_access(Action.REMOVE))
 ):
     try:
         service.delete(document_id, project_id)

@@ -379,6 +379,53 @@ def test_delete_document_by_owner_returns_204(
     assert not s3_file_exists(str(file_meta_save.storage_key))
 
 
+def test_delete_document_by_participant_returns_204(
+    test_client,
+    create_user,
+    create_project,
+    add_participant,
+    make_token,
+    tmp_path,
+    s3_file_exists
+):
+    owner = create_user(username="owner")
+    participant = create_user(username="participant")
+    project = create_project(owner.id)
+    add_participant(project, participant)
+    owner_token = make_token(owner.username, owner.name)
+    participant_token = make_token(participant.username, participant.name)
+
+    file_name = "report.pdf"
+    file_content = b"%PDF-1.4 test pdf content"
+    files = {"file": (file_name, file_content, "application/pdf")}
+
+    upload_resp = test_client.post(
+        f"{settings.API_PATH}/projects/{project.pid}/documents",
+        headers={"Authorization": f"Bearer {owner_token}"},
+        files=files,
+    )
+    assert upload_resp.status_code == status.HTTP_201_CREATED
+
+    file_id = upload_resp.json()["file_id"]
+    stmt = select(FileMeta).where(FileMeta.fid == file_id)
+
+    with connect() as session:
+        file_meta_save = session.scalar(stmt)
+
+    response = test_client.delete(
+        f"{settings.API_PATH}/projects/{project.pid}/documents/{file_id}",
+        headers={"Authorization": f"Bearer {participant_token}"}
+    )
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    with connect() as session:
+        file_meta = session.scalars(stmt).one_or_none()
+
+    assert file_meta is None
+    assert not s3_file_exists(str(file_meta_save.storage_key))
+
+
 def test_delete_document_nonexisting_returns_404(
     test_client,
     create_user,

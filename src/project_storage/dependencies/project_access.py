@@ -35,6 +35,7 @@ class Action(str, Enum):
     DELETE = "delete"
     INVITE = "invite"
     UPLOAD = "upload"
+    REMOVE = "remove"
 
 
 PROJECT_PERMISSIONS: dict[Role, set[Action]] = {
@@ -43,12 +44,14 @@ PROJECT_PERMISSIONS: dict[Role, set[Action]] = {
         Action.UPDATE,
         Action.DELETE,
         Action.INVITE,
-        Action.UPLOAD
+        Action.UPLOAD,
+        Action.REMOVE
     },
     Role.PARTICIPANT: {
         Action.READ,
         Action.UPDATE,
-        Action.UPLOAD
+        Action.UPLOAD,
+        Action.REMOVE
     },
 }
 
