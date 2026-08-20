@@ -4,7 +4,10 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 
-from project_storage.dependencies.glue import ProjectServiceDependency
+from project_storage.dependencies.glue import (
+    ProjectServiceDependency,
+    FileServiceDependency
+)
 from project_storage.dependencies.authentication import get_current_user
 from project_storage.dependencies.project_access import (
     Action,
@@ -21,6 +24,7 @@ from project_storage.repositories.project_repository import (
     ProjectExistsError,
     ProjectNotFoundError
 )
+from project_storage.repositories.file_repository import FileDeletionError
 from project_storage.api.v1.participants import router as participants_router
 from project_storage.api.v1.documents import router as documents_router
 
@@ -108,14 +112,22 @@ def delete_project(
     project_id: uuid.UUID,
     current_user: Annotated[User, Depends(get_current_user)],
     service: ProjectServiceDependency,
+    file_service: FileServiceDependency,
     access=Depends(require_access(Action.DELETE))
 ):
     try:
+        service.get(project_id)
+        file_service.delete_resources(project_id)
         service.delete(project_id)
     except (ProjectNotFoundError):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Project not found"
+        )
+    except FileDeletionError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error while deleting project documents"
         )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

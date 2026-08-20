@@ -85,3 +85,10 @@ class FileMetaRepository(Protocol):
 
     def delete(self, file_meta: FileMeta) -> None:
         """Delete file metadata"""
+
+    def list(self, project_id: uuid.UUID) -> list[FileMeta]:
+        """Return a list of file metadata belonging to a project
+
+        Returns:
+            List of FileMeta instances.
+        """

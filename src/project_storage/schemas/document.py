@@ -8,3 +8,8 @@ class CreatedDocument(BaseModel):
     file_id: uuid.UUID
     file_name: str
     file_size: int
+
+
+class CreatedDocumentList(BaseModel):
+    n: int
+    documents: list[CreatedDocument]

@@ -136,6 +136,14 @@ class FileService:
         self._file_repository.delete(str(file_meta.storage_key))
         self._file_meta_repository.delete(file_meta)
 
+    def list(self, project_id: uuid.UUID) -> list[FileMeta]:
+        return self._file_meta_repository.list(project_id)
+
+    def delete_resources(self, project_id: uuid.UUID) -> None:
+        file_metas = self.list(project_id)
+        for meta in file_metas:
+            self._file_repository.delete(str(meta.storage_key))
+
     def _get_file_size(self, stream: BinaryIO) -> int:
         chunk_size = settings.UPLOAD_FILE_CHUNK_SIZE_B
         total_size = 0
