@@ -82,3 +82,10 @@ class FileMetaRepository(Protocol):
             FileNotFoundError: If no file with the given id found on the
                 project.
         """
+
+    def list(self, project_id: uuid.UUID) -> list[FileMeta]:
+        """Return a list of file metadata belonging to a project
+
+        Returns:
+            List of FileMeta instances.
+        """

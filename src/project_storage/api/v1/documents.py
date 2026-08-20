@@ -31,7 +31,10 @@ from project_storage.services.file_service import (
     FileNameRequiredError,
     FileSizeError
 )
-from project_storage.schemas.document import CreatedDocument
+from project_storage.schemas.document import (
+    CreatedDocument,
+    CreatedDocumentList
+)
 
 
 router = APIRouter()
@@ -121,3 +124,23 @@ def get_document(
         media_type=file_meta.content_type,
         content=stream,
     )
+
+
+@router.get("")
+def list_documents(
+    project_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    service: FileServiceDependency,
+    access=Depends(require_access(Action.READ))
+):
+    file_metas = service.list(project_id)
+    response = CreatedDocumentList(n=len(file_metas), documents=[])
+    for meta in file_metas:
+        doc = CreatedDocument(
+            project_id=project_id,
+            file_id=meta.fid,
+            file_name=meta.filename,
+            file_size=meta.size
+        )
+        response.documents.append(doc)
+    return response
