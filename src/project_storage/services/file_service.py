@@ -16,7 +16,10 @@ from project_storage.core.config import settings
 _logger = logging.getLogger("file_service")
 
 
-ALLOWED_FILE_TYPES = ["application/pdf", "application/docx"]
+ALLOWED_FILE_TYPES = [
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+]
 
 
 class FileServiceError(Exception):
