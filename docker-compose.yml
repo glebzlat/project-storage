@@ -130,6 +130,7 @@ services:
     command: ["poe", "integ_test"]
     environment:
       DB_URL: postgresql://app:password@db-test:5432/project_storage_test
+      JWT_SECRET_KEY: "not-a-production-secret-at-least-32-bytes-long"
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
       AWS_ENDPOINT_URL: http://ministack-test:4566

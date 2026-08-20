@@ -334,3 +334,47 @@ def test_get_document_nonexistent_user_returns_401(
     )
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_list_documents(
+    create_user, test_client, create_project, make_token, tmp_path
+):
+    owner = create_user(username="owner")
+    project = create_project(owner.id)
+    token = make_token(owner.username, owner.name)
+
+    file_name = "file.pdf"
+    file_content = b"%PDF-1.4"
+    files = {"file": (file_name, file_content, "application/pdf")}
+
+    upload_resp = test_client.post(
+        f"{settings.API_PATH}/projects/{project.pid}/documents",
+        headers={"Authorization": f"Bearer {token}"},
+        files=files,
+    )
+    assert upload_resp.status_code == status.HTTP_201_CREATED
+
+    response = test_client.get(
+        f"{settings.API_PATH}/projects/{project.pid}/documents",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+
+    stmt = select(FileMeta).where(FileMeta.project_id == project.id)
+    with connect() as session:
+        file_metas = list(session.scalars(stmt))
+
+    data = response.json()
+    assert data == {
+        "n": len(file_metas),
+        "documents": [
+            {
+                "project_id": str(project.pid),
+                "file_id": str(file_metas[0].fid),
+                "file_name": file_metas[0].filename,
+                "file_size": file_metas[0].size
+            }
+        ]
+    }
+
