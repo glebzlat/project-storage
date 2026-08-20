@@ -27,6 +27,7 @@ from project_storage.exceptions.project import (
     ProjectExistsError,
     ProjectNotFoundError
 )
+from project_storage.error_model import ErrorModel
 
 
 router = APIRouter()
@@ -34,7 +35,19 @@ router.include_router(participants_router)
 router.include_router(documents_router, prefix="/{project_id}/documents")
 
 
-@router.post("/create")
+@router.post(
+    "/create",
+    responses={
+        status.HTTP_200_OK: {
+            "model": ExistingProject,
+            "description": "Successful creation"
+        },
+        status.HTTP_409_CONFLICT: {
+            "model": ErrorModel,
+            "description": "Project exists"}
+    },
+    response_model_exclude_unset=True
+)
 def create_project(
     create_project: CreateProject,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -56,11 +69,28 @@ def create_project(
     except ProjectExistsError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Project with specified name already exists"
+            detail=ErrorModel.asjson(
+                project_name=create_project.name,
+                user_id=current_user.uid,
+                description="User already owns a project with specified name"
+            )
         )
 
 
-@router.get("/{project_id}")
+@router.get(
+    "/{project_id}",
+    responses={
+        status.HTTP_200_OK: {
+            "model": ExistingProject,
+            "description": "Operation is successful"
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "model": ErrorModel,
+            "description": "Project not found"
+        }
+    },
+    response_model_exclude_unset=True
+)
 def get_project(
     project_id: uuid.UUID,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -71,7 +101,11 @@ def get_project(
     if project is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found"
+            detail=ErrorModel.asjson(
+                project_id=project_id,
+                user_id=current_user.uid,
+                description="Project not found"
+            )
         )
 
     return ExistingProject(
@@ -83,7 +117,20 @@ def get_project(
     )
 
 
-@router.patch("/{project_id}")
+@router.patch(
+    "/{project_id}",
+    responses={
+        status.HTTP_409_CONFLICT: {
+            "model": ErrorModel,
+            "description": "Project exists"
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "model": ErrorModel,
+            "description": "Project not found"
+        }
+    },
+    response_model_exclude_unset=True
+)
 def update_project(
     project_id: uuid.UUID,
     update_project: UpdateProject,
@@ -96,18 +143,39 @@ def update_project(
     except ProjectExistsError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Project with specified name already exists"
+            detail=ErrorModel.asjson(
+                project_id=project_id,
+                user_id=current_user.uid,
+                description="Project with specified name already exists"
+            )
         )
     except (ProjectNotFoundError):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found"
+            detail=ErrorModel.asjson(
+                project_id=project_id,
+                user_id=current_user.uid,
+                description="Project not found"
+            )
         )
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.delete("/{project_id}")
+@router.delete(
+    "/{project_id}",
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "model": ErrorModel,
+            "description": "Project not found"
+        },
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {
+            "model": ErrorModel,
+            "description": "Error while deleting"
+        }
+    },
+    response_model_exclude_unset=True
+)
 def delete_project(
     project_id: uuid.UUID,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -122,12 +190,20 @@ def delete_project(
     except (ProjectNotFoundError):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found"
+            detail=ErrorModel.asjson(
+                project_id=project_id,
+                user_id=current_user.uid,
+                description="Project not found"
+            )
         )
     except DocumentDeleteError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error while deleting project documents"
+            detail=ErrorModel.asjson(
+                project_id=project_id,
+                user_id=current_user.uid,
+                description="Error while deleting project documents"
+            )
         )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

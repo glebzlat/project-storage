@@ -6,6 +6,7 @@ from sqlalchemy import select
 from project_storage.core.config import settings
 from project_storage.database import connect
 from project_storage.models import FileMeta
+from project_storage.error_model import ErrorModel
 
 
 def test_upload_document_by_owner_returns_201(
@@ -127,7 +128,13 @@ def test_upload_document_duplicate_filename_returns_409(
         files=files,
     )
     assert r2.status_code == status.HTTP_409_CONFLICT
-    assert r2.json() == {"detail": "Document with this filename already exists"}
+    assert r2.json() == {
+        "detail": ErrorModel.asjson(
+            project_id=project.pid,
+            document_name="duplicate.pdf",
+            description="Document with this filename already exists"
+        )
+    }
 
 
 def test_upload_document_unsupported_type_returns_415(
@@ -147,7 +154,12 @@ def test_upload_document_unsupported_type_returns_415(
     )
 
     assert response.status_code == status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
-    assert "File type not allowed" in response.json()["detail"]
+    detail = response.json()["detail"]
+    assert detail == ErrorModel.asjson(
+        project_id=project.pid,
+        document_type="application/x-msdownload",
+        description="Document type not allowed: application/x-msdownload"
+    )
 
 
 def test_upload_document_missing_filename_returns_422(
@@ -446,7 +458,13 @@ def test_delete_document_nonexisting_returns_404(
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert response.json() == {"detail": f"Document {file_id} not found"}
+    assert response.json() == {
+        "detail": ErrorModel.asjson(
+            project_id=project.pid,
+            document_id=file_id,
+            description="Document not found"
+        )
+    }
 
 
 def test_list_documents(

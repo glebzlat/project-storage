@@ -22,11 +22,26 @@ from project_storage.exceptions.participant import (
     ParticipantNotFoundError
 )
 from project_storage.exceptions.project import ProjectNotFoundError
+from project_storage.error_model import ErrorModel
+
 
 router = APIRouter()
 
 
-@router.post("/{project_id}/participants")
+@router.post(
+    "/{project_id}/participants",
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "model": ErrorModel,
+            "description": "Project or user not found"
+        },
+        status.HTTP_409_CONFLICT: {
+            "model": ErrorModel,
+            "description": "Participant already added"
+        }
+    },
+    response_model_exclude_unset=True
+)
 def invite_participant(
     project_id: uuid.UUID,
     participant: AddParticipant,
@@ -39,22 +54,42 @@ def invite_participant(
     except ProjectNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found"
+            detail=ErrorModel.asjson(
+                project_id=project_id,
+                description="Project not found"
+            )
         )
     except UserNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            detail=ErrorModel.asjson(
+                project_id=project_id,
+                username=participant.username,
+                description="User not found"
+            )
         )
     except ParticipantExistsError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Participant already added to the project"
+            detail=ErrorModel.asjson(
+                project_id=project_id,
+                username=participant.username,
+                description="Participant already added to the project"
+            )
         )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.get("/{project_id}/participants")
+@router.get(
+    "/{project_id}/participants",
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "model": ErrorModel,
+            "description": "Project not found"
+        }
+    },
+    response_model_exclude_unset=True
+)
 def get_participants(
     project_id: uuid.UUID,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -66,7 +101,10 @@ def get_participants(
     if participants is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found"
+            detail=ErrorModel.asjson(
+                project_id=project_id,
+                description="Project not found"
+            )
         )
 
     lst = ParticipantList(n=len(participants), participants=[])
@@ -77,7 +115,16 @@ def get_participants(
     return lst
 
 
-@router.delete("/{project_id}/participants/{participant_username}")
+@router.delete(
+    "/{project_id}/participants/{participant_username}",
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "model": ErrorModel,
+            "description": "Project, user or participant not found"
+        }
+    },
+    response_model_exclude_unset=True
+)
 def remove_participant(
     project_id: uuid.UUID,
     participant_username: str,
@@ -90,17 +137,28 @@ def remove_participant(
     except ParticipantNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Participant not found on project"
+            detail=ErrorModel.asjson(
+                project_id=project_id,
+                username=participant_username,
+                description="Participant not found on project"
+            )
         )
     except ProjectNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found"
+            detail=ErrorModel.asjson(
+                project_id=project_id,
+                description="Project not found"
+            )
         )
     except UserNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            detail=ErrorModel.asjson(
+                project_id=project_id,
+                username=participant_username,
+                description="User not found"
+            )
         )
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)

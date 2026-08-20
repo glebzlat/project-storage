@@ -9,6 +9,7 @@ from sqlalchemy import select
 from project_storage.core.config import settings
 from project_storage.database import connect
 from project_storage.models import Project
+from project_storage.error_model import ErrorModel
 
 
 def test_create_project_as_authenticated_user(
@@ -65,7 +66,11 @@ def test_create_project_duplicate_project_name_returns_409(
     assert response1.status_code == status.HTTP_200_OK
     assert response2.status_code == status.HTTP_409_CONFLICT
     assert response2.json() == {
-        "detail": "Project with specified name already exists"
+        "detail": ErrorModel.asjson(
+            project_name=project_name,
+            user_id=user.uid,
+            description="User already owns a project with specified name"
+        )
     }
 
 
@@ -292,7 +297,11 @@ def test_update_project_rename_to_existing_name_returns_409(
 
     assert response.status_code == status.HTTP_409_CONFLICT
     assert response.json() == {
-        "detail": "Project with specified name already exists"
+        "detail": ErrorModel.asjson(
+            project_id=project2.pid,
+            user_id=user.uid,
+            description="Project with specified name already exists"
+        )
     }
 
 

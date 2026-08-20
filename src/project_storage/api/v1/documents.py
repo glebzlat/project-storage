@@ -33,6 +33,7 @@ from project_storage.exceptions.document import (
     DocumentDownloadError,
     DocumentDeleteError
 )
+from project_storage.error_model import ErrorModel
 
 
 router = APIRouter()
@@ -41,7 +42,26 @@ router = APIRouter()
 @router.post(
     "",
     response_model=CreatedDocument,
-    status_code=status.HTTP_201_CREATED
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_415_UNSUPPORTED_MEDIA_TYPE: {
+            "model": ErrorModel,
+            "description": "Document type required or not allowed"
+        },
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
+            "model": ErrorModel,
+            "description": "Document name required"
+        },
+        status.HTTP_409_CONFLICT: {
+            "model": ErrorModel,
+            "description": "Document already exists"
+        },
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {
+            "model": ErrorModel,
+            "description": "Failed to upload document"
+        }
+    },
+    response_model_exclude_unset=True
 )
 def upload_document(
     project_id: uuid.UUID,
@@ -68,31 +88,65 @@ def upload_document(
     except DocumentTypeRequiredError:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="Document type required"
+            detail=ErrorModel.asjson(
+                project_id=project_id,
+                description="Document type required"
+            )
         )
     except DocumentTypeNotAllowedError as e:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail=f"Document type not allowed: {e.filetype}"
+            detail=ErrorModel.asjson(
+                project_id=project_id,
+                document_type=e.filetype,
+                description=f"Document type not allowed: {e.filetype}"
+            )
         )
     except DocumentNameRequiredError:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Document name required"
+            detail=ErrorModel.asjson(
+                project_id=project_id,
+                description="Document name required"
+            )
         )
-    except DocumentExistsError:
+    except DocumentExistsError as e:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Document with this filename already exists"
+            detail=ErrorModel.asjson(
+                project_id=project_id,
+                document_name=e.filename,
+                description="Document with this filename already exists"
+            )
         )
     except DocumentSaveError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to upload document"
+            detail=ErrorModel.asjson(
+                project_id=project_id,
+                description="Failed to upload document"
+            )
         )
 
 
-@router.get("/{document_id}")
+@router.get(
+    "/{document_id}",
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "model": ErrorModel,
+            "description": "Document not found"
+        },
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {
+            "model": ErrorModel,
+            "description": "Failed to load file"
+        },
+        status.HTTP_413_CONTENT_TOO_LARGE: {
+            "model": ErrorModel,
+            "description": "File size exceeds server limits"
+        }
+    },
+    response_model_exclude_unset=True
+)
 def get_document(
     project_id: uuid.UUID,
     document_id: uuid.UUID,
@@ -105,17 +159,30 @@ def get_document(
     except DocumentNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Document {e.file_id} not found"
+            detail=ErrorModel.asjson(
+                project_id=project_id,
+                document_id=e.file_id,
+                description="Document not found"
+            )
         )
     except DocumentDownloadError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to load file"
+            detail=ErrorModel.asjson(
+                project_id=project_id,
+                document_id=document_id,
+                description="Failed to load file"
+            )
         )
     except DocumentSizeError as e:
         raise HTTPException(
             status_code=status.HTTP_413_CONTENT_TOO_LARGE,
-            detail=f"File size exceeds server limits: {e.size}"
+            detail=ErrorModel.asjson(
+                project_id=project_id,
+                document_id=document_id,
+                document_size=e.size,
+                description="File size exceeds server limits"
+            )
         )
 
     return StreamingResponse(
@@ -124,7 +191,20 @@ def get_document(
     )
 
 
-@router.delete("/{document_id}")
+@router.delete(
+    "/{document_id}",
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "model": ErrorModel,
+            "description": "Document not found"
+        },
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {
+            "model": ErrorModel,
+            "description": "Failed to delete file"
+        }
+    },
+    response_model_exclude_unset=True
+)
 def remove_document(
     project_id: uuid.UUID,
     document_id: uuid.UUID,
@@ -134,15 +214,23 @@ def remove_document(
 ):
     try:
         service.delete(document_id, project_id)
-    except DocumentNotFoundError as e:
+    except DocumentNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Document {e.file_id} not found"
+            detail=ErrorModel.asjson(
+                project_id=project_id,
+                document_id=document_id,
+                description="Document not found"
+            )
         )
     except DocumentDeleteError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete file"
+            detail=ErrorModel.asjson(
+                project_id=project_id,
+                document_id=document_id,
+                description="Failed to delete file"
+            )
         )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

@@ -11,12 +11,25 @@ from project_storage.exceptions.user import (
     UserExistsError,
     UserPasswordError
 )
+from project_storage.error_model import ErrorModel
 
 
 router = APIRouter()
 
 
-@router.post("/register")
+@router.post(
+    "/register",
+    responses={
+        status.HTTP_409_CONFLICT: {
+            "model": ErrorModel,
+            "description": "Username is taken"
+        },
+        status.HTTP_400_BAD_REQUEST: {
+            "model": ErrorModel,
+            "description": "Passwords don't match"
+        }
+    }
+)
 def register_user(
     user: RegisterUser,
     service: UserServiceDependency
@@ -30,12 +43,17 @@ def register_user(
     except UserExistsError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Username already taken"
+            detail=ErrorModel.asjson(
+                username=user.username,
+                description="Username already taken"
+            )
         )
     except UserPasswordError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Provided passwords don't match"
+            detail=ErrorModel.asjson(
+                description="Provided passwords don't match"
+            )
         )
 
 
@@ -48,7 +66,9 @@ def login_user(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail=ErrorModel.asjson(
+                description="Incorrect username or password"
+            ),
             headers={"WWW-Authenticate": "Bearer"}
         )
     access_token = service.create_token(user)
