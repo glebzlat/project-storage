@@ -4,10 +4,12 @@ from io import BytesIO
 from botocore.exceptions import ClientError
 
 from project_storage.repositories.file_repository import (
-    FileRepository as FileRepositoryProtocol,
-    FileSaveError,
-    FileDownloadError,
-    FileDeletionError
+    FileRepository as FileRepositoryProtocol
+)
+from project_storage.exceptions.document import (
+    DocumentSaveError,
+    DocumentDownloadError,
+    DocumentDeleteError
 )
 
 
@@ -23,14 +25,14 @@ class FileRepository(FileRepositoryProtocol):
                 storage_key,
             )
         except ClientError:
-            raise FileSaveError()
+            raise DocumentSaveError()
 
     def get(self, storage_key: str) -> BinaryIO:
         stream = BytesIO()
         try:
             self._client.download_fileobj(storage_key, stream)
         except ClientError:
-            raise FileDownloadError()
+            raise DocumentDownloadError()
         stream.seek(0)
         return stream
 
@@ -38,4 +40,4 @@ class FileRepository(FileRepositoryProtocol):
         try:
             self._client.delete_object(storage_key)
         except ClientError:
-            raise FileDeletionError()
+            raise DocumentDeleteError()

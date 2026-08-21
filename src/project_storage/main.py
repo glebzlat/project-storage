@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, status
 
 from project_storage.api.v1.router import router
 from project_storage.api.v1.users import router as users_router
@@ -13,6 +13,9 @@ setup_logging()
 app = FastAPI(
     title=settings.APP_NAME,
     root_path=settings.API_PATH,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {"description": 'Unauthorized'}
+    }
 )
 
 app.include_router(router)

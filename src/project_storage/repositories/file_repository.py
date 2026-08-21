@@ -1,41 +1,25 @@
 from typing import Protocol, BinaryIO
 
 
-class FileRepositoryError(Exception):
-    """Errors related to FileRepository"""
-
-
-class FileSaveError(FileRepositoryError):
-    """Error saving file"""
-
-
-class FileDownloadError(FileRepositoryError):
-    """Error downloading file"""
-
-
-class FileDeletionError(FileRepositoryError):
-    """Error deleting file"""
-
-
 class FileRepository(Protocol):
 
     def save(self, content: BinaryIO, storage_key: str) -> None:
         """Save the file contents to a persistent file storage
 
         Raises:
-            FileSaveError: In case of any error related to file saving.
+            DocumentSaveError: In case of any error related to file saving.
         """
 
     def get(self, storage_key: str) -> BinaryIO:
         """Get the file from a persistent file storage
 
         Raises:
-            FileDownloadError: In case of download error.
+            DocumentDownloadError: In case of download error.
         """
 
     def delete(self, storage_key: str) -> None:
         """Delete the file
 
         Raises:
-            FileDeletionError: In case of deletion error.
+            DocumentDeletionError: In case of deletion error.
         """

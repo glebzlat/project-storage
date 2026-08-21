@@ -4,11 +4,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from project_storage.repositories.participant_repository import (
-    ParticipantRepository as ParticipantRepositoryProtocol,
+    ParticipantRepository as ParticipantRepositoryProtocol
+)
+from project_storage.models import User, Project, ProjectParticipantAssociation
+from project_storage.exceptions.participant import (
     ParticipantExistsError,
     ParticipantNotFoundError
 )
-from project_storage.models import User, Project, ProjectParticipantAssociation
 
 
 class ParticipantRepository(ParticipantRepositoryProtocol):

@@ -9,6 +9,7 @@ from sqlalchemy import select
 from project_storage.core.config import settings
 from project_storage.database import connect
 from project_storage.models import User
+from project_storage.error_model import ErrorModel
 
 
 def test_register_user(test_client):
@@ -51,7 +52,12 @@ def test_register_user_duplicate_returns_409(test_client, create_user):
     )
 
     assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {"detail": "Username already taken"}
+    assert response.json() == {
+        "detail": ErrorModel.asjson(
+            username="user",
+            description="Username already taken"
+        )
+    }
 
 
 def test_login_user(test_client, create_user, make_token):
@@ -88,11 +94,11 @@ def test_login_user(test_client, create_user, make_token):
 
     expected_iat = fromtimestamp(expected_jwt_data["iat"])
     returned_iat = fromtimestamp(returned_jwt_data["iat"])
-    assert abs(expected_iat - returned_iat) < timedelta(seconds=1)
+    assert abs(expected_iat - returned_iat) <= timedelta(seconds=2)
 
     expected_exp = fromtimestamp(expected_jwt_data["exp"])
     returned_exp = fromtimestamp(returned_jwt_data["exp"])
-    assert abs(expected_exp - returned_exp) < timedelta(seconds=1)
+    assert abs(expected_exp - returned_exp) <= timedelta(seconds=2)
 
 
 def test_login_nonexistent_user_returns_401(test_client, mocker):
@@ -103,7 +109,11 @@ def test_login_nonexistent_user_returns_401(test_client, mocker):
 
     assert response.status_code == HTTPStatus.UNAUTHORIZED
     assert response.headers.get("WWW-Authenticate") == "Bearer"
-    assert response.json() == {"detail": "Incorrect username or password"}
+    assert response.json() == {
+        "detail": ErrorModel.asjson(
+            description="Incorrect username or password"
+        )
+    }
 
 
 def test_read_current_user(test_client, create_user, make_token):

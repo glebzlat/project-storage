@@ -8,26 +8,14 @@ from datetime import timedelta, datetime, timezone
 from pwdlib import PasswordHash
 from jwt.exceptions import InvalidTokenError, ExpiredSignatureError
 
-from project_storage.repositories.user_repository import (
-    UserRepository,
-    UserExistsError,
-    UserNotFoundError
-)
+from project_storage.repositories.user_repository import UserRepository
 from project_storage.models import User
 from project_storage.schemas.user import RegisterUser
 from project_storage.core.config import settings
-
-
-class UsernameAlreadyTakenError(Exception):
-    """The user with the given username already exists."""
-
-    def __init__(self, message: str, username: str) -> None:
-        super().__init__(message)
-        self.username = username
-
-
-class PasswordsDoNotMatchError(Exception):
-    """Password does not match repeated password."""
+from project_storage.exceptions.user import (
+    UserNotFoundError,
+    UserPasswordError
+)
 
 
 class UserService:
@@ -65,7 +53,7 @@ class UserService:
 
     def register(self, request: RegisterUser) -> User:
         if request.password != request.repeat_password:
-            raise PasswordsDoNotMatchError("Passwords do not match")
+            raise UserPasswordError(username=request.username)
 
         ph = PasswordHash.recommended()
         hashed_password = ph.hash(request.password)
@@ -77,14 +65,8 @@ class UserService:
             hashed_password=hashed_password
         )
 
-        try:
-            self._user_repository.add(user)
-            return user
-        except UserExistsError:
-            raise UsernameAlreadyTakenError(
-                "Username already taken",
-                request.username
-            )
+        self._user_repository.add(user)
+        return user
 
     def get_current(self, token: str) -> Optional[User]:
         try:

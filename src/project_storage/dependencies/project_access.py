@@ -10,18 +10,12 @@ from project_storage.dependencies.glue import (
     get_project_repository,
     get_participant_repository
 )
-from project_storage.repositories.project_repository import (
-    ProjectRepository,
-    ProjectNotFoundError
-)
+from project_storage.repositories.project_repository import ProjectRepository
 from project_storage.repositories.participant_repository import (
     ParticipantRepository
 )
 from project_storage.dependencies.authentication import get_current_user
-
-
-class AccessError(Exception):
-    """User is not authorized to perform an action"""
+from project_storage.exceptions.project import ProjectNotFoundError
 
 
 class Role(str, Enum):

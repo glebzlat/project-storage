@@ -20,7 +20,7 @@ services:
     profiles: ["dev"]
     build: .
     restart: unless-stopped
-    command: ["dev", "--reload", "src/project_storage/main.py"]
+    command: ["dev", "--host", "0.0.0.0", "--reload", "src/project_storage/main.py"]
     ports:
       - 8000:8000
     env_file: ".env"
