@@ -135,7 +135,6 @@ def upload_document(
             status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail=ErrorModel.asjson(
                 project_id=project_id,
-                document_id=e.filename,
                 document_size=e.size,
                 description="File size exceeds server limits"
             )

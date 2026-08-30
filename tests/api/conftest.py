@@ -170,6 +170,17 @@ def make_token():
 
 
 @pytest.fixture
+def modify_settings():
+    original = {
+        name: getattr(settings, name)
+        for name in type(settings).model_fields
+    }
+    yield settings
+    for name, value in original.items():
+        setattr(settings, name, value)
+
+
+@pytest.fixture
 def s3_file_exists():
 
     def _exists(key):
