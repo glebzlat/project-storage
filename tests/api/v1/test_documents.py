@@ -508,3 +508,34 @@ def test_list_documents(
             }
         ]
     }
+
+
+def test_upload_size_exceeds_max_raises_413(
+    create_user, test_client, create_project, make_token, modify_settings
+):
+    modify_settings.UPLOAD_FILE_MAX_SIZE_B = 1024
+
+    owner = create_user(username="owner")
+    project = create_project(owner.id)
+    token = make_token(owner.username, owner.name)
+
+    file_name = "file.pdf"
+    file_content = b"%PDF-1.4" + b"." * 1024
+    file_size = len(file_content)
+    files = {"file": (file_name, file_content, "application/pdf")}
+
+    response = test_client.post(
+        f"{settings.API_PATH}/projects/{project.pid}/documents",
+        headers={"Authorization": f"Bearer {token}"},
+        files=files,
+    )
+    assert response.status_code == status.HTTP_413_CONTENT_TOO_LARGE
+
+    data = response.json()
+    assert data == {
+        "detail": {
+            "project_id": str(project.pid),
+            "document_size": file_size,
+            "description": "File size exceeds server limits"
+        }
+    }
